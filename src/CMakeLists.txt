@@ -49,11 +49,18 @@ target_sources(taiga PRIVATE
 	media/anime_settings.hpp
 	media/anime_utils.cpp
 	media/anime_utils.hpp
+	link/discord_frames.cpp
+	link/discord_frames.hpp
+	link/discord_ipc.cpp
+	link/discord_ipc.hpp
+
 	media/airing_schedule.cpp
 	media/airing_schedule.hpp
 	media/anime.hpp
 	media/home_feed.cpp
 	media/home_feed.hpp
+	media/list_undo.cpp
+	media/list_undo.hpp
 	media/stats.cpp
 	media/stats.hpp
 
@@ -101,6 +108,10 @@ target_sources(taiga PRIVATE
 	taiga/application.cpp
 	taiga/application.hpp
 	taiga/config.h
+	taiga/discord_activity.cpp
+	taiga/discord_activity.hpp
+	taiga/discord_presence.cpp
+	taiga/discord_presence.hpp
 	taiga/network.cpp
 	taiga/network.hpp
 	taiga/orange.cpp

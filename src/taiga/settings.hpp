@@ -33,6 +33,8 @@ namespace taiga {
 class Settings final : public base::Settings {
 public:
   static constexpr QLatin1StringView kAppStyleSystem{"system"};
+  // Taiga's application on Discord, which has the image assets
+  static constexpr QLatin1StringView kDiscordApplicationId{"379871385176244224"};
   static constexpr std::chrono::seconds kUpdateDelayMin{10};
   static constexpr std::chrono::seconds kUpdateDelayMax{3600};
 
@@ -46,15 +48,23 @@ public:
   bool calendarNotificationsEnabled() const;
   bool calendarWatchingOnly() const;
   bool detectionEnabled() const;
+  QString discordApplicationId() const;
+  bool discordEnabled() const;
+  bool discordShowButton() const;
+  bool discordShowGroup() const;
+  bool discordShowTime() const;
+  bool discordShowUsername() const;
   std::vector<std::string> disabledMediaPlayers() const;
   std::string service() const;
   std::vector<std::string> libraryFolders() const;
+  bool listUpdateNotificationsEnabled() const;
   std::chrono::milliseconds mediaDetectionInterval() const;
   QNetworkProxy::ProxyType proxyType() const;
   std::string proxyHost() const;
   int proxyPort() const;
   std::string proxyUsername() const;
   std::string proxyPassword() const;
+  bool sharingEnabled() const;
   bool streamingMediaEnabled() const;
   bool syncEnabled() const;
   anime::TitleLanguage titleLanguage() const;
@@ -77,6 +87,13 @@ public:
   void setProxyPassword(const std::string& password) const;
   void setStreamingMediaEnabled(const bool enabled) const;
   void setCalendarNotificationsEnabled(const bool enabled) const;
+  void setDiscordEnabled(const bool enabled) const;
+  void setDiscordShowButton(const bool enabled) const;
+  void setDiscordShowGroup(const bool enabled) const;
+  void setDiscordShowTime(const bool enabled) const;
+  void setDiscordShowUsername(const bool enabled) const;
+  void setSharingEnabled(const bool enabled) const;
+  void setListUpdateNotificationsEnabled(const bool enabled) const;
   void setCalendarWatchingOnly(const bool enabled) const;
   void setSyncEnabled(const bool enabled) const;
   void setTitleLanguage(const anime::TitleLanguage language) const;

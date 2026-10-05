@@ -22,6 +22,7 @@
 #include "gui/settings/settings_page_accounts.hpp"
 #include "gui/settings/settings_page_advanced.hpp"
 #include "gui/settings/settings_page_application.hpp"
+#include "gui/settings/settings_page_discord.hpp"
 #include "gui/settings/settings_page_library.hpp"
 #include "gui/settings/settings_page_media_players.hpp"
 #include "gui/settings/settings_page_recognition.hpp"
@@ -71,8 +72,9 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui_(new Ui::S
     add_child(item, "Streaming", ui_->streamingPage);
   }
   {
-    auto item = add_item("share", "Sharing");
-    add_child(item, "Discord");
+    // Discord is the only sharing method so far.
+    auto item = add_item("share", "Sharing", ui_->discordPage);
+    add_child(item, "Discord", ui_->discordPage);
     add_child(item, "HTTP");
     add_child(item, "mIRC");
   }
@@ -113,6 +115,7 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui_(new Ui::S
       new SettingsPageMediaPlayers(ui_, this),
       new SettingsPageRecognition(ui_, this),
       new SettingsPageStreaming(ui_, this),
+      new SettingsPageDiscord(ui_, this),
       // clang-format on
   };
   for (auto page : pages_) {

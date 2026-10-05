@@ -39,6 +39,7 @@
 #include "sync/queue.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/config.h"
+#include "taiga/discord_presence.hpp"
 #include "taiga/path.hpp"
 #include "taiga/settings.hpp"
 #include "taiga/version.hpp"
@@ -103,6 +104,8 @@ int Application::run() {
 
   window_ = new gui::MainWindow();
   window_->init();
+
+  discordPresence()->init();
 
 #ifdef Q_OS_WINDOWS
   // Delay showing the window to avoid a white flash.

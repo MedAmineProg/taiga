@@ -92,6 +92,13 @@ void History::remove(const int id) {
   emit changed();
 }
 
+void History::removeAt(const int animeId, const std::time_t time) {
+  const auto it = std::ranges::find_if(items_, [animeId, time](const HistoryItem& item) {
+    return item.anime_id == animeId && item.time == time;
+  });
+  if (it != items_.end()) remove(it->id);
+}
+
 void History::clear() {
   auto db = QSqlDatabase::database();
   if (db.open()) {

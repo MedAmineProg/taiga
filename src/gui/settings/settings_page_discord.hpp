@@ -15,27 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-namespace anime {
-struct Details;
-}
+#include "gui/settings/settings_page.hpp"
 
-namespace anime::list {
+namespace gui {
 
-struct Entry;
+class SettingsPageDiscord final : public SettingsPage {
+  Q_OBJECT
+  Q_DISABLE_COPY_MOVE(SettingsPageDiscord)
 
-float getProgressRatio(const Details* item, const Entry* entry);
+public:
+  SettingsPageDiscord(Ui::SettingsDialog* ui, QDialog* dialog);
+  ~SettingsPageDiscord() override = default;
 
-bool isInList(const Entry* entry);
+  void load() override;
+  void apply() const override;
+};
 
-Entry entryWithEpisodeWatched(const Details& item, const Entry* entry, const int number);
-
-void save(Entry entry);
-void remove(const int animeId);
-
-// Reverts a group of changes recorded in `undoStack`.
-void undo(const int groupId);
-
-}  // namespace anime::list
+}  // namespace gui

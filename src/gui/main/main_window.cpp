@@ -28,6 +28,7 @@
 #include "gui/calendar/airing_notifier.hpp"
 #include "gui/calendar/calendar_widget.hpp"
 #include "gui/common/spinner_widget.hpp"
+#include "gui/common/toast_widget.hpp"
 #include "gui/history/history_widget.hpp"
 #include "gui/home/home_widget.hpp"
 #include "gui/library/library_widget.hpp"
@@ -43,12 +44,15 @@
 #include "gui/settings/settings_dialog.hpp"
 #include "gui/stats/stats_widget.hpp"
 #include "gui/utils/format.hpp"
+#include "gui/utils/rating.hpp"
 #include "gui/utils/theme.hpp"
 #include "gui/utils/tray_icon.hpp"
 #include "gui/utils/widgets.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_list.hpp"
+#include "media/anime_list_utils.hpp"
 #include "media/anime_utils.hpp"
+#include "media/list_undo.hpp"
 #include "sync/anilist/anilist.hpp"
 #include "sync/kitsu/kitsu.hpp"
 #include "sync/myanimelist/myanimelist.hpp"
@@ -56,6 +60,7 @@
 #include "sync/service.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/application.hpp"
+#include "taiga/discord_presence.hpp"
 #include "taiga/session.hpp"
 #include "taiga/settings.hpp"
 #include "track/media.hpp"
@@ -67,6 +72,52 @@
 #endif
 
 namespace gui {
+
+namespace {
+
+QString describeChanges(const anime::list::ChangeGroup& group) {
+  using anime::list::Field;
+  using anime::list::Status;
+
+  if (group.changes.size() > 1) {
+    return MainWindow::tr("%1 anime updated").arg(group.changes.size());
+  }
+
+  const auto& change = group.changes.front();
+  const auto& next = change.next;
+  const auto summary = anime::list::summarize(change);
+
+  const auto item = anime::db.item(change.anime_id);
+  auto title = item ? QString::fromStdString(anime::preferredTitle(*item)) : QString{};
+  if (title.size() > 48) title = title.left(47) + u"…"_s;
+
+  QString what;
+  if (summary.added) {
+    what = MainWindow::tr("Added to %1").arg(formatListStatus(next.status));
+  } else if (summary.fields.testFlag(Field::Episode)) {
+    what = MainWindow::tr("Episode %1 watched").arg(next.watched_episodes);
+    if (summary.fields.testFlag(Field::Status) && next.status == Status::Completed) {
+      what += u" · "_s + formatListStatus(next.status);
+    }
+  } else if (summary.fields.testFlag(Field::Status)) {
+    what = MainWindow::tr("Moved to %1").arg(formatListStatus(next.status));
+  } else if (summary.fields.testFlag(Field::Score)) {
+    what = next.score > 0 ? MainWindow::tr("Scored %1").arg(formatRating(next.score))
+                          : MainWindow::tr("Score removed");
+  } else if (summary.fields.testFlag(Field::Rewatching)) {
+    what = next.rewatching ? MainWindow::tr("Rewatching") : MainWindow::tr("Stopped rewatching");
+  } else if (summary.fields.testFlag(Field::Notes)) {
+    what = MainWindow::tr("Notes updated");
+  } else if (summary.fields & (Field::DateStarted | Field::DateCompleted)) {
+    what = MainWindow::tr("Dates updated");
+  } else {
+    what = MainWindow::tr("Updated");
+  }
+
+  return title.isEmpty() ? what : u"%1 · %2"_s.arg(title, what);
+}
+
+}  // namespace
 
 MainWindow::MainWindow() : QMainWindow(), ui_(new Ui::MainWindow) {
   ui_->setupUi(this);
@@ -118,6 +169,7 @@ void MainWindow::init() {
   initStatusbar();
   initNavigation();
   initNowPlaying();
+  initUndoNotifications();
   updateTitle();
 }
 
@@ -150,6 +202,12 @@ void MainWindow::initActions() {
   ui_->actionToggleDetection->setChecked(track::media::detection()->isEnabled());
   connect(ui_->actionToggleDetection, &QAction::toggled, this,
           [](const bool checked) { track::media::detection()->setEnabled(checked); });
+
+  ui_->actionToggleSharing->setChecked(taiga::settings.sharingEnabled());
+  connect(ui_->actionToggleSharing, &QAction::toggled, this, [](const bool checked) {
+    taiga::settings.setSharingEnabled(checked);
+    taiga::discordPresence()->update();
+  });
 
   ui_->actionToggleSynchronization->setChecked(taiga::settings.syncEnabled());
   connect(ui_->actionToggleSynchronization, &QAction::toggled, this,
@@ -406,6 +464,22 @@ void MainWindow::initToolbar() {
     ui_->toolbar->insertWidget(before, m_searchBox);
     insertSpacer(before);
   }
+}
+
+void MainWindow::initUndoNotifications() {
+  m_toast = new ToastWidget(ui_->centralWidget);
+
+  connect(&anime::list::undoStack, &anime::list::UndoStack::recorded, this, [this](int groupId) {
+    if (!taiga::settings.listUpdateNotificationsEnabled()) return;
+    const auto group = anime::list::undoStack.group(groupId);
+    if (!group) return;
+
+    const auto text = describeChanges(*group);
+    m_toast->showMessage(text, tr("Undo"), [groupId]() { anime::list::undo(groupId); });
+
+    // The window may be hidden while watching, so let the tray tell about it too.
+    if (!isActiveWindow() && m_trayIcon) m_trayIcon->showMessage(tr("List updated"), text);
+  });
 }
 
 void MainWindow::initTrayIcon() {

@@ -32,6 +32,8 @@ target_sources(taiga-gui PRIVATE
 	common/poster_widget.hpp
 	common/spinner_widget.cpp
 	common/spinner_widget.hpp
+	common/toast_widget.cpp
+	common/toast_widget.hpp
 
 	history/history_widget.cpp
 	history/history_widget.hpp
@@ -98,6 +100,8 @@ target_sources(taiga-gui PRIVATE
 	settings/settings_page_advanced.hpp
 	settings/settings_page_application.cpp
 	settings/settings_page_application.hpp
+	settings/settings_page_discord.cpp
+	settings/settings_page_discord.hpp
 	settings/settings_page_library.cpp
 	settings/settings_page_library.hpp
 	settings/settings_page_media_players.cpp
