@@ -102,6 +102,7 @@ void NavigationWidget::refresh() {
 
   auto historyItem = addItem("History", "history", MainWindowPage::History);
   setItemData(historyItem, NavigationItemDataRole::Counter, sync::queue.count());
+  addItem("Statistics", "bar_chart", MainWindowPage::Statistics);
 
   addSeparator();
   addItem("Library", "folder", MainWindowPage::Library);

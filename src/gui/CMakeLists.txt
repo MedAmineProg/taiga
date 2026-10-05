@@ -80,6 +80,9 @@ target_sources(taiga-gui PRIVATE
 	search/search_widget.cpp
 	search/search_widget.hpp
 
+	stats/stats_widget.cpp
+	stats/stats_widget.hpp
+
 	settings/settings_dialog.cpp
 	settings/settings_dialog.hpp
 	settings/settings_page.cpp

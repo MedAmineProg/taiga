@@ -52,6 +52,8 @@ target_sources(taiga PRIVATE
 	media/anime.hpp
 	media/home_feed.cpp
 	media/home_feed.hpp
+	media/stats.cpp
+	media/stats.hpp
 
 	sync/anilist/anilist.cpp
 	sync/anilist/anilist.hpp

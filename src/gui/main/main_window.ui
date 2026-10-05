@@ -84,6 +84,7 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="statsPage"/>
       </widget>
      </widget>
     </item>

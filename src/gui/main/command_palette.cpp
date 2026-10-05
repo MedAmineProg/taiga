@@ -164,6 +164,8 @@ void CommandPalette::buildCommands() {
   }
   addPage(tr("History"), u"history"_s,
           [this] { m_mainWindow->navigateTo(MainWindowPage::History); });
+  addPage(tr("Statistics"), u"bar_chart"_s,
+          [this] { m_mainWindow->navigateTo(MainWindowPage::Statistics); });
   addPage(tr("Library"), u"folder"_s,
           [this] { m_mainWindow->navigateTo(MainWindowPage::Library); });
 
