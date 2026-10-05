@@ -62,6 +62,25 @@ check_cxx_source_compiles("
 		return value > 1 ? 0 : 1;
 	}
 " TAIGA_HAS_FLOAT_FROM_CHARS)
+# On Apple platforms, libc++ marks features as unavailable on deployment targets whose system
+# libc++ lacks them, even when a newer libc++ (e.g. Homebrew LLVM's) is linked in instead.
+if (NOT TAIGA_HAS_FLOAT_FROM_CHARS AND APPLE)
+	set(CMAKE_REQUIRED_DEFINITIONS -D_LIBCPP_DISABLE_AVAILABILITY)
+	check_cxx_source_compiles("
+		#include <charconv>
+		int main() {
+			const char str[] = \"1.5\";
+			float value = 0;
+			std::from_chars(str, str + 3, value);
+			return value > 1 ? 0 : 1;
+		}
+	" TAIGA_HAS_FLOAT_FROM_CHARS_WITHOUT_AVAILABILITY)
+	set(CMAKE_REQUIRED_DEFINITIONS)
+	if (TAIGA_HAS_FLOAT_FROM_CHARS_WITHOUT_AVAILABILITY)
+		set(TAIGA_HAS_FLOAT_FROM_CHARS ON)
+		add_compile_definitions(_LIBCPP_DISABLE_AVAILABILITY)
+	endif()
+endif()
 set(CMAKE_CXX_STANDARD ${_taiga_cxx_standard})
 if (NOT TAIGA_HAS_RANGES_STARTS_WITH AND NOT MSVC)
 	message(STATUS "Using a compatibility implementation of std::ranges::starts_with")

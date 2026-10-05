@@ -94,6 +94,10 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTAIGA_BUILD_TESTS=ON
 
+      - name: Show configure log
+        if: failure()
+        run: tail -n 300 build/CMakeFiles/CMakeConfigureLog.yaml
+
       - name: Build
         run: cmake --build build
 
