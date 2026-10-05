@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <chrono>
 
-namespace sync {
+namespace taiga::sync {
 
 // Delay before retrying a failed request, doubling after each consecutive failure:
 // 30s, 1m, 2m, 4m... up to 6h.
@@ -31,4 +31,4 @@ constexpr std::chrono::seconds retryDelay(const int retryCount) {
   return std::min<std::chrono::seconds>(kBase * (1 << exponent), kMax);
 }
 
-}  // namespace sync
+}  // namespace taiga::sync

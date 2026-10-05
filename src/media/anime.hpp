@@ -59,18 +59,13 @@ enum class TitleLanguage {
 };
 
 constexpr std::array<Status, 3> kStatuses{
-  Status::FinishedAiring,
-  Status::Airing,
-  Status::NotYetAired,
+    Status::FinishedAiring,
+    Status::Airing,
+    Status::NotYetAired,
 };
 
 constexpr std::array<Type, 6> kTypes{
-  Type::Tv,
-  Type::Ova,
-  Type::Movie,
-  Type::Special,
-  Type::Ona,
-  Type::Music,
+    Type::Tv, Type::Ova, Type::Movie, Type::Special, Type::Ona, Type::Music,
 };
 
 constexpr int kMaxEpisodeCount = 1900;
@@ -88,8 +83,8 @@ struct Titles {
 
 struct Details {
   int id = kUnknownId;
-  // std::map<sync::ServiceId, std::string> uids;
-  // sync::ServiceId source = sync::ServiceId::Unknown;
+  // std::map<taiga::sync::ServiceId, std::string> uids;
+  // taiga::sync::ServiceId source = taiga::sync::ServiceId::Unknown;
   std::time_t last_modified = 0;
   int episode_count = kUnknownEpisodeCount;
   int episode_length = kUnknownEpisodeLength;

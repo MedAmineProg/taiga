@@ -24,20 +24,20 @@
 
 class QRestReply;
 
-namespace sync {
+namespace taiga::sync {
 class Service;
 }
 
-namespace sync::kitsu {
+namespace taiga::sync::kitsu {
 
 bool isError(const QRestReply& reply);
 bool isTokenExpired(const QRestReply& reply);
 
-void handleError(sync::Service& service, QRestReply& reply, const QString& message = {});
+void handleError(taiga::sync::Service& service, QRestReply& reply, const QString& message = {});
 
 // Use this overload when the reply body has already been consumed via `QRestReply::readJson()`,
 // which can only be read once.
-void handleError(sync::Service& service, QRestReply& reply,
+void handleError(taiga::sync::Service& service, QRestReply& reply,
                  const std::optional<QJsonDocument>& json, const QString& message = {});
 
-}  // namespace sync::kitsu
+}  // namespace taiga::sync::kitsu

@@ -36,7 +36,7 @@
 #include "taiga/path.hpp"
 #include "taiga/settings.hpp"
 
-namespace sync {
+namespace taiga::sync {
 
 Queue::Queue() : QObject{} {}
 
@@ -404,4 +404,4 @@ void Queue::migrateFromV1() {
   }
 }
 
-}  // namespace sync
+}  // namespace taiga::sync

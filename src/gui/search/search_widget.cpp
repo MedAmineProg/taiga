@@ -41,14 +41,14 @@
 
 namespace {
 
-std::optional<sync::SearchSort> toSearchSort(gui::AnimeListModel::Column column) {
+std::optional<taiga::sync::SearchSort> toSearchSort(gui::AnimeListModel::Column column) {
   // clang-format off
   switch (column) {
-    case gui::AnimeListModel::COLUMN_TITLE: return sync::SearchSort::Title;
-    case gui::AnimeListModel::COLUMN_DURATION: return sync::SearchSort::Duration;
-    case gui::AnimeListModel::COLUMN_AVERAGE: return sync::SearchSort::Score;
-    case gui::AnimeListModel::COLUMN_TYPE: return sync::SearchSort::Type;
-    case gui::AnimeListModel::COLUMN_SEASON: return sync::SearchSort::StartDate;
+    case gui::AnimeListModel::COLUMN_TITLE: return taiga::sync::SearchSort::Title;
+    case gui::AnimeListModel::COLUMN_DURATION: return taiga::sync::SearchSort::Duration;
+    case gui::AnimeListModel::COLUMN_AVERAGE: return taiga::sync::SearchSort::Score;
+    case gui::AnimeListModel::COLUMN_TYPE: return taiga::sync::SearchSort::Type;
+    case gui::AnimeListModel::COLUMN_SEASON: return taiga::sync::SearchSort::StartDate;
     default: return std::nullopt;
   }
   // clang-format on
@@ -199,14 +199,14 @@ SearchWidget::SearchWidget(QWidget* parent)
   connect(mainWindow()->searchBox(), &QLineEdit::returnPressed, this,
           [this]() { performSearch(); });
 
-  const QList<sync::Service*> services{
-      sync::anilist::Service::instance(),
-      sync::kitsu::Service::instance(),
-      sync::myanimelist::Service::instance(),
+  const QList<taiga::sync::Service*> services{
+      taiga::sync::anilist::Service::instance(),
+      taiga::sync::kitsu::Service::instance(),
+      taiga::sync::myanimelist::Service::instance(),
   };
   for (auto* service : services) {
-    connect(service, &sync::Service::searchCompleted, this,
-            [this](const sync::SearchParams& params, const QList<int>& ids) {
+    connect(service, &taiga::sync::Service::searchCompleted, this,
+            [this](const taiga::sync::SearchParams& params, const QList<int>& ids) {
               if (params != currentSearchParams()) return;
               m_model->addIds(ids);
             });
@@ -308,7 +308,7 @@ void SearchWidget::setViewMode(ListViewMode mode) {
   }
 }
 
-sync::SearchParams SearchWidget::currentSearchParams() const {
+taiga::sync::SearchParams SearchWidget::currentSearchParams() const {
   const auto& filters = m_proxyModel->filters();
 
   return {
@@ -334,7 +334,7 @@ void SearchWidget::performSearch() {
     return;
   }
 
-  sync::search(params);
+  taiga::sync::search(params);
 }
 
 }  // namespace gui

@@ -26,21 +26,21 @@ class TestRetry final : public QObject {
 
 private slots:
   void doublesAfterEachFailure() {
-    QCOMPARE(sync::retryDelay(1), 30s);
-    QCOMPARE(sync::retryDelay(2), 60s);
-    QCOMPARE(sync::retryDelay(3), 120s);
-    QCOMPARE(sync::retryDelay(5), 480s);
+    QCOMPARE(taiga::sync::retryDelay(1), 30s);
+    QCOMPARE(taiga::sync::retryDelay(2), 60s);
+    QCOMPARE(taiga::sync::retryDelay(3), 120s);
+    QCOMPARE(taiga::sync::retryDelay(5), 480s);
   }
 
   void isCapped() {
-    QCOMPARE(sync::retryDelay(10), 15360s);  // 4h16m
-    QCOMPARE(sync::retryDelay(11), std::chrono::seconds{6h});
-    QCOMPARE(sync::retryDelay(1000), std::chrono::seconds{6h});
+    QCOMPARE(taiga::sync::retryDelay(10), 15360s);  // 4h16m
+    QCOMPARE(taiga::sync::retryDelay(11), std::chrono::seconds{6h});
+    QCOMPARE(taiga::sync::retryDelay(1000), std::chrono::seconds{6h});
   }
 
   void handlesNonPositiveCounts() {
-    QCOMPARE(sync::retryDelay(0), 30s);
-    QCOMPARE(sync::retryDelay(-1), 30s);
+    QCOMPARE(taiga::sync::retryDelay(0), 30s);
+    QCOMPARE(taiga::sync::retryDelay(-1), 30s);
   }
 };
 

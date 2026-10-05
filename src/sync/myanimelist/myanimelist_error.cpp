@@ -29,7 +29,7 @@
 #include "sync/service.hpp"
 #include "taiga/network.hpp"
 
-namespace sync::myanimelist {
+namespace taiga::sync::myanimelist {
 
 namespace {
 
@@ -73,7 +73,7 @@ bool isTokenExpired(const QRestReply& reply) {
   return wwwAuthenticateValue(reply, u"error"_s) == "invalid_token";
 }
 
-void handleError(sync::Service& service, QRestReply& reply, const QString& message) {
+void handleError(taiga::sync::Service& service, QRestReply& reply, const QString& message) {
   if (taiga::isDdosProtectionActive(reply)) {
     const auto server = QString::fromUtf8(reply.networkReply()->rawHeader("Server"));
     const auto description =
@@ -97,4 +97,4 @@ void handleError(sync::Service& service, QRestReply& reply, const QString& messa
   }
 }
 
-}  // namespace sync::myanimelist
+}  // namespace taiga::sync::myanimelist

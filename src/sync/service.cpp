@@ -34,7 +34,7 @@
 #include "taiga/network.hpp"
 #include "taiga/settings.hpp"
 
-namespace sync {
+namespace taiga::sync {
 
 Service::Service(const ServiceId id) : QObject{qApp}, manager_{taiga::network()}, id_{id} {
   api_.setCommonHeaders(taiga::NetworkAccessManager::commonHeaders());
@@ -296,4 +296,4 @@ void pruneMissingEntries(const QSet<int>& fetchedIds) {
   }
 }
 
-}  // namespace sync
+}  // namespace taiga::sync

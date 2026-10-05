@@ -33,7 +33,7 @@
 #include "media/anime_list.hpp"
 #include "media/anime_season.hpp"
 
-namespace sync::anilist {
+namespace taiga::sync::anilist {
 
 FuzzyDate parseFuzzyDate(const QJsonValue& json) {
   return FuzzyDate{
@@ -187,4 +187,4 @@ std::optional<anime::list::Entry> parseListEntry(const QJsonValue& json) {
   };
 }
 
-}  // namespace sync::anilist
+}  // namespace taiga::sync::anilist

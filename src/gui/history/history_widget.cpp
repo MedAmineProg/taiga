@@ -133,10 +133,10 @@ void HistoryWidget::clearHistory() const {
 
 void HistoryWidget::clearQueue() const {
   const auto informativeText = tr("Any changes not yet synchronized with %1 will be discarded.")
-                                   .arg(sync::serviceName(sync::currentServiceId()));
+                                   .arg(taiga::sync::serviceName(taiga::sync::currentServiceId()));
 
   if (confirm(nullptr, tr("Do you want to clear the sync queue?"), informativeText, tr("Clear"))) {
-    sync::queue.clear();
+    taiga::sync::queue.clear();
   }
 }
 

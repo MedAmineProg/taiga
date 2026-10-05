@@ -94,7 +94,7 @@ MediaDialog::MediaDialog(QWidget* parent) : QDialog(parent), ui_(new Ui::MediaDi
 
   connect(ui_->posterWidget, &PosterWidget::clicked, this, [this](Qt::MouseButton button) {
     if (button == Qt::MouseButton::LeftButton) {
-      QUrl url{sync::animePageUrl(m_anime.id)};
+      QUrl url{taiga::sync::animePageUrl(m_anime.id)};
       QDesktopServices::openUrl(url);
     }
   });
@@ -106,12 +106,12 @@ MediaDialog::MediaDialog(QWidget* parent) : QDialog(parent), ui_(new Ui::MediaDi
     const int progress = ui_->spinProgress->value();
 
     // Set status
-    switch (sync::currentServiceId()) {
-      case sync::ServiceId::MyAnimeList:
+    switch (taiga::sync::currentServiceId()) {
+      case taiga::sync::ServiceId::MyAnimeList:
         // MyAnimeList tracks rewatching independently of status.
         break;
-      case sync::ServiceId::Kitsu:
-      case sync::ServiceId::AniList: {
+      case taiga::sync::ServiceId::Kitsu:
+      case taiga::sync::ServiceId::AniList: {
         const int status =
             static_cast<int>(isChecked ? anime::list::Status::Watching : m_entry->status);
         if (const int index = ui_->comboStatus->findData(status); index > -1) {
@@ -170,7 +170,7 @@ void MediaDialog::closeEvent(QCloseEvent* event) {
 void MediaDialog::keyPressEvent(QKeyEvent* event) {
   if (event->key() == Qt::Key_F5) {
     imageProvider.fetchPoster(m_anime.id);
-    sync::fetchAnime(m_anime.id);
+    taiga::sync::fetchAnime(m_anime.id);
     return;
   }
 
@@ -205,7 +205,7 @@ void MediaDialog::setAnime(const Anime& anime) {
   initSettings();
 
   if (anime::isStale(anime)) {
-    sync::fetchAnime(anime.id);
+    taiga::sync::fetchAnime(anime.id);
   }
 }
 

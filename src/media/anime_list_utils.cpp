@@ -99,7 +99,7 @@ void save(Entry entry) {
     historyTimes.append(entry.last_updated);
   }
 
-  sync::queue.push(entry.anime_id, dirty);
+  taiga::sync::queue.push(entry.anime_id, dirty);
 
   if (!UndoStack::isSuppressed()) {
     static QElapsedTimer clock;
@@ -135,7 +135,7 @@ void undo(const int groupId) {
     const auto current = db.entry(change.anime_id);
     if (current && current->id == kUnknownId) {
       // It was never sent to the service, so there's nothing to delete there.
-      sync::queue.pop(change.anime_id);
+      taiga::sync::queue.pop(change.anime_id);
       db.deleteEntry(change.anime_id);
     } else {
       remove(change.anime_id);
@@ -153,7 +153,7 @@ void remove(const int animeId) {
 
   db.updateEntry(updated);
 
-  sync::queue.pushDelete(animeId);
+  taiga::sync::queue.pushDelete(animeId);
 }
 
 }  // namespace anime::list

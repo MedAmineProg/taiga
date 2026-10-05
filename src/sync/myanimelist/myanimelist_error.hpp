@@ -22,15 +22,15 @@
 
 class QRestReply;
 
-namespace sync {
+namespace taiga::sync {
 class Service;
 }
 
-namespace sync::myanimelist {
+namespace taiga::sync::myanimelist {
 
 bool isError(const QRestReply& reply);
 bool isTokenExpired(const QRestReply& reply);
 
-void handleError(sync::Service& service, QRestReply& reply, const QString& message = {});
+void handleError(taiga::sync::Service& service, QRestReply& reply, const QString& message = {});
 
-}  // namespace sync::myanimelist
+}  // namespace taiga::sync::myanimelist
