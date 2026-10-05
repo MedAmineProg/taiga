@@ -76,8 +76,15 @@ jobs:
         with:
           submodules: recursive
 
+      # Apple's libc++ lacks some C++23 library features that Anitomy needs (e.g. std::from_chars
+      # for floats), so build with Homebrew LLVM and its libc++.
       - name: Install dependencies
-        run: brew install ninja
+        run: |
+          brew install llvm ninja
+          LLVM="$(brew --prefix llvm)"
+          echo "CC=$LLVM/bin/clang" >> "$GITHUB_ENV"
+          echo "CXX=$LLVM/bin/clang++" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L$LLVM/lib/c++ -L$LLVM/lib/unwind -lunwind -Wl,-rpath,$LLVM/lib/c++" >> "$GITHUB_ENV"
 
       - uses: jurplel/install-qt-action@v4
         with:
