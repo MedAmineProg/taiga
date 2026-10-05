@@ -48,8 +48,7 @@
 
 namespace taiga {
 
-Application::Application(int argc, char* argv[])
-    : QApplication(argc, argv), shared_memory_(TAIGA_APP_NAME) {
+Application::Application(int argc, char* argv[]) : QApplication(argc, argv) {
   setApplicationName("taiga");
   setApplicationDisplayName("Taiga");
   setApplicationVersion(QString::fromStdString(taiga::version().to_string()));
@@ -83,13 +82,15 @@ int Application::run() {
   }
 
   connect(&local_server_, &QLocalServer::newConnection, this, &Application::onNewConnection);
+  // A server left behind by a crash would keep this one from listening (on Unix).
+  QLocalServer::removeServer(TAIGA_APP_NAME);
   local_server_.listen(TAIGA_APP_NAME);
 
   taiga::settings.init();
   initSecrets();
   anime::db.init();
   anime::history.init();
-  sync::queue.init();
+  taiga::sync::queue.init();
   track::media::detection()->init();
   track::updateSession()->init();
   gui::imageProvider.init();
@@ -146,7 +147,13 @@ bool Application::notify(QObject* receiver, QEvent* event) {
 }
 
 bool Application::hasPreviousInstance() {
-  return !shared_memory_.create(1);
+  // Unlike shared memory, a lock file left behind by a crashed instance is detected as stale
+  // (its process is gone), so Taiga can start again.
+  const auto directory = QString::fromStdString(get_data_path());
+  QDir().mkpath(directory);
+  instance_lock_ = std::make_unique<QLockFile>(u"%1/taiga.lock"_s.arg(directory));
+  instance_lock_->setStaleLockTime(0);  // only stale if its process is gone
+  return !instance_lock_->tryLock(0);
 }
 
 void Application::activatePreviousInstance() {
