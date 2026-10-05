@@ -54,6 +54,8 @@ target_sources(taiga PRIVATE
 	media/anime.hpp
 	media/home_feed.cpp
 	media/home_feed.hpp
+	media/list_undo.cpp
+	media/list_undo.hpp
 	media/stats.cpp
 	media/stats.hpp
 

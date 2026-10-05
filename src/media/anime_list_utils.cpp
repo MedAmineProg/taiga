@@ -19,12 +19,16 @@
 #include "anime_list_utils.hpp"
 
 #include <QDate>
+#include <QElapsedTimer>
 #include <ctime>
+#include <optional>
+#include <ranges>
 
 #include "media/anime.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_history.hpp"
 #include "media/anime_list.hpp"
+#include "media/list_undo.hpp"
 #include "sync/queue.hpp"
 
 namespace anime::list {
@@ -67,7 +71,9 @@ Entry entryWithEpisodeWatched(const Details& item, const Entry* entry, const int
 }
 
 void save(Entry entry) {
-  const auto previous = db.entry(entry.anime_id);
+  const auto previousEntry = db.entry(entry.anime_id);
+  // A copy, as the database is updated below.
+  const auto previous = previousEntry ? std::optional{*previousEntry} : std::nullopt;
   const Entry baseline = previous ? *previous : Entry{.anime_id = entry.anime_id};
 
   Fields dirty;
@@ -86,11 +92,55 @@ void save(Entry entry) {
   entry.last_updated = std::time(nullptr);
   db.updateEntry(entry);
 
-  if ((dirty & Field::Episode) && entry.watched_episodes > 0) {
+  QList<std::time_t> historyTimes;
+  // Undoing restores an earlier state, which isn't a newly watched episode.
+  if ((dirty & Field::Episode) && entry.watched_episodes > 0 && !UndoStack::isSuppressed()) {
     history.add(entry.anime_id, entry.watched_episodes, entry.last_updated);
+    historyTimes.append(entry.last_updated);
   }
 
   sync::queue.push(entry.anime_id, dirty);
+
+  if (!UndoStack::isSuppressed()) {
+    static QElapsedTimer clock;
+    if (!clock.isValid()) clock.start();
+    undoStack.record(
+        Change{
+            .anime_id = entry.anime_id,
+            .previous = previous,
+            .next = entry,
+            .history_times = historyTimes,
+        },
+        clock.elapsed());
+  }
+}
+
+void undo(const int groupId) {
+  const auto group = undoStack.take(groupId);
+  if (!group) return;
+
+  const UndoStack::Guard guard;
+
+  for (const auto& change : group->changes | std::views::reverse) {
+    for (const auto time : change.history_times) {
+      history.removeAt(change.anime_id, time);
+    }
+
+    if (change.previous && isInList(&*change.previous)) {
+      save(*change.previous);
+      continue;
+    }
+
+    // The anime wasn't in the list before.
+    const auto current = db.entry(change.anime_id);
+    if (current && current->id == kUnknownId) {
+      // It was never sent to the service, so there's nothing to delete there.
+      sync::queue.pop(change.anime_id);
+      db.deleteEntry(change.anime_id);
+    } else {
+      remove(change.anime_id);
+    }
+  }
 }
 
 void remove(const int animeId) {

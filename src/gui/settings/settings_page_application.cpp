@@ -17,6 +17,7 @@
  */
 #include "settings_page_application.hpp"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QStyleFactory>
 #include <algorithm>
@@ -63,9 +64,13 @@ void SettingsPageApplication::load() {
     combo->setCurrentIndex(
         std::max(0, combo->findData(static_cast<int>(taiga::settings.titleLanguage()))));
   }
+  ui_->listUpdateNotificationsCheckBox->setChecked(
+      taiga::settings.listUpdateNotificationsEnabled());
 }
 
 void SettingsPageApplication::apply() const {
+  taiga::settings.setListUpdateNotificationsEnabled(
+      ui_->listUpdateNotificationsCheckBox->isChecked());
   taiga::settings.setAppStyle(ui_->styleComboBox->currentData().toString().toStdString());
   const auto colorScheme =
       static_cast<Qt::ColorScheme>(ui_->colorSchemeComboBox->currentData().toInt());

@@ -45,6 +45,7 @@ class NowPlayingWidget;
 class SearchWidget;
 class StatsWidget;
 class StatusBarController;
+class ToastWidget;
 class TrayIcon;
 
 class MainWindow final : public QMainWindow {
@@ -92,6 +93,7 @@ private:
   void initStatusbar();
   void initToolbar();
   void initTrayIcon();
+  void initUndoNotifications();
 
   Ui::MainWindow* ui_ = nullptr;
 
@@ -108,6 +110,7 @@ private:
   SearchWidget* m_searchWidget = nullptr;
   StatsWidget* m_statsWidget = nullptr;
   StatusBarController* m_statusBarController = nullptr;
+  ToastWidget* m_toast = nullptr;
   TrayIcon* m_trayIcon = nullptr;
 };
 

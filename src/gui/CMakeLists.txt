@@ -32,6 +32,8 @@ target_sources(taiga-gui PRIVATE
 	common/poster_widget.hpp
 	common/spinner_widget.cpp
 	common/spinner_widget.hpp
+	common/toast_widget.cpp
+	common/toast_widget.hpp
 
 	history/history_widget.cpp
 	history/history_widget.hpp

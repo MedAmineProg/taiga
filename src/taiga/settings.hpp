@@ -49,6 +49,7 @@ public:
   std::vector<std::string> disabledMediaPlayers() const;
   std::string service() const;
   std::vector<std::string> libraryFolders() const;
+  bool listUpdateNotificationsEnabled() const;
   std::chrono::milliseconds mediaDetectionInterval() const;
   QNetworkProxy::ProxyType proxyType() const;
   std::string proxyHost() const;
@@ -77,6 +78,7 @@ public:
   void setProxyPassword(const std::string& password) const;
   void setStreamingMediaEnabled(const bool enabled) const;
   void setCalendarNotificationsEnabled(const bool enabled) const;
+  void setListUpdateNotificationsEnabled(const bool enabled) const;
   void setCalendarWatchingOnly(const bool enabled) const;
   void setSyncEnabled(const bool enabled) const;
   void setTitleLanguage(const anime::TitleLanguage language) const;

@@ -102,6 +102,10 @@ std::string Settings::service() const {
       .toStdString();
 }
 
+bool Settings::listUpdateNotificationsEnabled() const {
+  return value("notifications.listUpdates", true).toBool();
+}
+
 std::vector<std::string> Settings::libraryFolders() const {
   return value("library.folders").toJsonArray().toVariantList() |
          std::views::transform([](const QVariant& v) { return v.toString().toStdString(); }) |
@@ -241,6 +245,10 @@ void Settings::setStreamingMediaEnabled(const bool enabled) const {
 
 void Settings::setCalendarNotificationsEnabled(const bool enabled) const {
   setValue("calendar.notifications", enabled);
+}
+
+void Settings::setListUpdateNotificationsEnabled(const bool enabled) const {
+  setValue("notifications.listUpdates", enabled);
 }
 
 void Settings::setCalendarWatchingOnly(const bool enabled) const {

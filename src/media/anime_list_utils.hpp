@@ -35,4 +35,7 @@ Entry entryWithEpisodeWatched(const Details& item, const Entry* entry, const int
 void save(Entry entry);
 void remove(const int animeId);
 
+// Reverts a group of changes recorded in `undoStack`.
+void undo(const int groupId);
+
 }  // namespace anime::list
