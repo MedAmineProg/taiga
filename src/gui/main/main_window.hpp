@@ -34,6 +34,7 @@ enum class Status;
 
 namespace gui {
 
+class CommandPalette;
 class HistoryWidget;
 class LibraryWidget;
 class ListWidget;
@@ -63,6 +64,7 @@ public:
 
 public slots:
   void addNewFolder();
+  void showCommandPalette();
   void displayWindow();
   void navigateTo(MainWindowPage page);
   void navigateToListStatus(anime::list::Status status);
@@ -90,6 +92,7 @@ private:
 
   Ui::MainWindow* ui_ = nullptr;
 
+  CommandPalette* m_commandPalette = nullptr;
   HistoryWidget* m_historyWidget = nullptr;
   LibraryWidget* m_libraryWidget = nullptr;
   ListWidget* m_listWidget = nullptr;

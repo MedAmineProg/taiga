@@ -45,6 +45,9 @@ public:
   Accounts();
   ~Accounts() = default;
 
+  static QStringList secretKeys();
+  void initSecrets() const;
+
   bool anilistAuthenticated() const;
   sync::anilist::RatingSystem anilistRatingSystem() const;
   std::string anilistUsername() const;

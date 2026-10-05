@@ -185,7 +185,7 @@ bool synchronize() {
   }
 
   if (queue.count() > 0) {
-    queue.process();
+    queue.process(true);
   } else {
     fetchListEntries();
   }

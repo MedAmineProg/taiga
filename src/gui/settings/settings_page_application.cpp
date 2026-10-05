@@ -21,6 +21,7 @@
 #include <QStyleFactory>
 #include <algorithm>
 
+#include "gui/utils/theme.hpp"
 #include "taiga/settings.hpp"
 #include "ui_settings_dialog.h"
 
@@ -66,8 +67,12 @@ void SettingsPageApplication::load() {
 
 void SettingsPageApplication::apply() const {
   taiga::settings.setAppStyle(ui_->styleComboBox->currentData().toString().toStdString());
-  taiga::settings.setAppColorScheme(
-      static_cast<Qt::ColorScheme>(ui_->colorSchemeComboBox->currentData().toInt()));
+  const auto colorScheme =
+      static_cast<Qt::ColorScheme>(ui_->colorSchemeComboBox->currentData().toInt());
+  if (colorScheme != taiga::settings.appColorScheme()) {
+    taiga::settings.setAppColorScheme(colorScheme);
+    theme.setColorScheme(colorScheme);
+  }
   taiga::settings.setTitleLanguage(
       static_cast<anime::TitleLanguage>(ui_->titleLanguageComboBox->currentData().toInt()));
 }

@@ -30,6 +30,7 @@
 #include "gui/library/library_widget.hpp"
 #include "gui/list/list_widget.hpp"
 #include "gui/main/about_dialog.hpp"
+#include "gui/main/command_palette.hpp"
 #include "gui/main/navigation_controller.hpp"
 #include "gui/main/navigation_widget.hpp"
 #include "gui/main/now_playing_widget.hpp"
@@ -132,6 +133,16 @@ void MainWindow::initActions() {
   connect(ui_->actionDisplayWindow, &QAction::triggered, this, &MainWindow::displayWindow);
   connect(ui_->actionSynchronize, &QAction::triggered, this, &MainWindow::synchronize);
 
+  {
+    // Not a child of the window, so that it doesn't list itself.
+    auto action = new QAction(tr("Command palette"), ui_->toolbar);
+    action->setShortcuts(
+        {QKeySequence{Qt::CTRL | Qt::Key_K}, QKeySequence{Qt::CTRL | Qt::SHIFT | Qt::Key_P}});
+    action->setShortcutContext(Qt::WindowShortcut);
+    connect(action, &QAction::triggered, this, &MainWindow::showCommandPalette);
+    addAction(action);
+  }
+
   ui_->actionToggleDetection->setChecked(track::media::detection()->isEnabled());
   connect(ui_->actionToggleDetection, &QAction::toggled, this,
           [](const bool checked) { track::media::detection()->setEnabled(checked); });
@@ -139,6 +150,11 @@ void MainWindow::initActions() {
   ui_->actionToggleSynchronization->setChecked(taiga::settings.syncEnabled());
   connect(ui_->actionToggleSynchronization, &QAction::toggled, this,
           [](const bool checked) { taiga::settings.setSyncEnabled(checked); });
+}
+
+void MainWindow::showCommandPalette() {
+  if (!m_commandPalette) m_commandPalette = new CommandPalette(this);
+  m_commandPalette->popup();
 }
 
 void MainWindow::initIcons() {

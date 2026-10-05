@@ -35,6 +35,7 @@ struct QueueItem {
   std::time_t time = 0;
   int retry_count = 0;
   std::string last_error;
+  std::time_t next_attempt = 0;  // not persisted
 };
 
 class Queue final : public QObject {
@@ -51,7 +52,8 @@ public:
   void pushDelete(const int animeId);
   void pop(const int animeId);
 
-  void process();
+  // Items that recently failed are skipped until their backoff expires, unless forced.
+  void process(const bool force = false);
   void complete(const bool success, const QString& error = {});
   void complete(const ListEntry& remote);
 
@@ -87,10 +89,12 @@ private:
   void reconcile(const int animeId, const ListEntry* remote);
 
   void processAutomatically();
+  void scheduleRetry();
 
   QList<QueueItem> items_;
   QTimer* processTimer_ = nullptr;
   QTimer* periodicTimer_ = nullptr;
+  QTimer* retryTimer_ = nullptr;
 
   std::optional<int> processing_;
   bool deleting_ = false;

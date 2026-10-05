@@ -18,6 +18,7 @@
 
 #include "application.hpp"
 
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
 #include <QLocalSocket>
@@ -28,6 +29,7 @@
 #include <format>
 
 #include "base/log.hpp"
+#include "base/secret_store.hpp"
 #include "base/string.hpp"
 #include "gui/main/main_window.hpp"
 #include "gui/utils/image_provider.hpp"
@@ -35,6 +37,7 @@
 #include "media/anime_db.hpp"
 #include "media/anime_history.hpp"
 #include "sync/queue.hpp"
+#include "taiga/accounts.hpp"
 #include "taiga/config.h"
 #include "taiga/path.hpp"
 #include "taiga/settings.hpp"
@@ -82,6 +85,7 @@ int Application::run() {
   local_server_.listen(TAIGA_APP_NAME);
 
   taiga::settings.init();
+  initSecrets();
   anime::db.init();
   anime::history.init();
   sync::queue.init();
@@ -156,6 +160,19 @@ void Application::initLogger() const {
   const auto path = u"%1/%2_%3.log"_s.arg(directory).arg(TAIGA_APP_NAME).arg(date);
 
   base::initLogging(path, options_.debug ? QtDebugMsg : QtWarningMsg);
+}
+
+void Application::initSecrets() const {
+  // Entries are scoped to the data directory, so that portable installations don't share them.
+  const auto dataPath = QDir::cleanPath(QString::fromStdString(get_data_path()));
+  const auto prefix =
+      QCryptographicHash::hash(dataPath.toUtf8(), QCryptographicHash::Sha1).toHex().left(8);
+
+  base::secrets.init(TAIGA_APP_NAME, QString::fromLatin1(prefix),
+                     taiga::Settings::secretKeys() + taiga::Accounts::secretKeys());
+
+  taiga::settings.initSecrets();
+  taiga::accounts.initSecrets();
 }
 
 void Application::onNewConnection() {

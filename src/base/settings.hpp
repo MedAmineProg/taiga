@@ -20,6 +20,8 @@
 
 #include <QSettings>
 #include <QString>
+#include <QStringList>
+#include <string>
 #include <string_view>
 
 namespace base {
@@ -32,6 +34,12 @@ protected:
   QVariant value(QAnyStringView key, const QVariant& defaultValue) const;
   void setValue(QAnyStringView key, const QVariant& value) const;
   void setValue(QAnyStringView key, const std::string_view value) const;
+  void remove(QAnyStringView key) const;
+
+  // Secrets are kept in the credential store when available, and in the settings file otherwise.
+  std::string secretValue(const QString& key) const;
+  void setSecretValue(const QString& key, const std::string_view value) const;
+  void migrateSecrets(const QStringList& keys) const;
 
   QSettings settings() const;
 };

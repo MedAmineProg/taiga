@@ -49,6 +49,14 @@ void Settings::init() const {
   }
 }
 
+QStringList Settings::secretKeys() {
+  return {u"network.proxy.password"_s};
+}
+
+void Settings::initSecrets() const {
+  migrateSecrets(secretKeys());
+}
+
 QString Settings::fileName() const {
   return u"%1/settings.json"_s.arg(get_data_path());
 }
@@ -116,7 +124,7 @@ std::string Settings::proxyUsername() const {
 }
 
 std::string Settings::proxyPassword() const {
-  return value("network.proxy.password").toString().toStdString();
+  return secretValue(u"network.proxy.password"_s);
 }
 
 bool Settings::streamingMediaEnabled() const {
@@ -216,7 +224,7 @@ void Settings::setProxyUsername(const std::string& username) const {
 }
 
 void Settings::setProxyPassword(const std::string& password) const {
-  setValue("network.proxy.password", password);
+  setSecretValue(u"network.proxy.password"_s, password);
 }
 
 void Settings::setStreamingMediaEnabled(const bool enabled) const {

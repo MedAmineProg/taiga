@@ -27,6 +27,17 @@ namespace taiga {
 
 Accounts::Accounts() : QObject{} {}
 
+QStringList Accounts::secretKeys() {
+  return {
+      u"anilist.token"_s,  u"kitsu.accessToken"_s,       u"kitsu.refreshToken"_s,
+      u"kitsu.password"_s, u"myanimelist.accessToken"_s, u"myanimelist.refreshToken"_s,
+  };
+}
+
+void Accounts::initSecrets() const {
+  migrateSecrets(secretKeys());
+}
+
 QString Accounts::fileName() const {
   return u"%1/accounts.json"_s.arg(get_data_path());
 }
@@ -47,7 +58,7 @@ std::string Accounts::anilistUsername() const {
 }
 
 std::string Accounts::anilistToken() const {
-  return value("anilist.token").toString().toStdString();
+  return secretValue(u"anilist.token"_s);
 }
 
 bool Accounts::kitsuAuthenticated() const {
@@ -55,7 +66,7 @@ bool Accounts::kitsuAuthenticated() const {
 }
 
 std::string Accounts::kitsuAccessToken() const {
-  return value("kitsu.accessToken").toString().toStdString();
+  return secretValue(u"kitsu.accessToken"_s);
 }
 
 std::string Accounts::kitsuDisplayName() const {
@@ -72,7 +83,7 @@ sync::kitsu::RatingSystem Accounts::kitsuRatingSystem() const {
 }
 
 std::string Accounts::kitsuRefreshToken() const {
-  return value("kitsu.refreshToken").toString().toStdString();
+  return secretValue(u"kitsu.refreshToken"_s);
 }
 
 std::string Accounts::kitsuUserId() const {
@@ -84,7 +95,7 @@ std::string Accounts::kitsuUsername() const {
 }
 
 std::string Accounts::kitsuPassword() const {
-  return value("kitsu.password").toString().toStdString();
+  return secretValue(u"kitsu.password"_s);
 }
 
 bool Accounts::myanimelistAuthenticated() const {
@@ -96,11 +107,11 @@ std::string Accounts::myanimelistUsername() const {
 }
 
 std::string Accounts::myanimelistAccessToken() const {
-  return value("myanimelist.accessToken").toString().toStdString();
+  return secretValue(u"myanimelist.accessToken"_s);
 }
 
 std::string Accounts::myanimelistRefreshToken() const {
-  return value("myanimelist.refreshToken").toString().toStdString();
+  return secretValue(u"myanimelist.refreshToken"_s);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +130,7 @@ void Accounts::setAnilistUsername(const std::string& username) const {
 }
 
 void Accounts::setAnilistToken(const std::string& token) const {
-  setValue("anilist.token", token);
+  setSecretValue(u"anilist.token"_s, token);
 }
 
 void Accounts::setKitsuAuthenticated(bool authenticated) {
@@ -128,7 +139,7 @@ void Accounts::setKitsuAuthenticated(bool authenticated) {
 }
 
 void Accounts::setKitsuAccessToken(const std::string& accessToken) const {
-  setValue("kitsu.accessToken", accessToken);
+  setSecretValue(u"kitsu.accessToken"_s, accessToken);
 }
 
 void Accounts::setKitsuDisplayName(const std::string& displayName) const {
@@ -144,7 +155,7 @@ void Accounts::setKitsuRatingSystem(const std::string& ratingSystem) const {
 }
 
 void Accounts::setKitsuRefreshToken(const std::string& refreshToken) const {
-  setValue("kitsu.refreshToken", refreshToken);
+  setSecretValue(u"kitsu.refreshToken"_s, refreshToken);
 }
 
 void Accounts::setKitsuUserId(const std::string& userId) const {
@@ -156,7 +167,7 @@ void Accounts::setKitsuUsername(const std::string& username) const {
 }
 
 void Accounts::setKitsuPassword(const std::string& password) const {
-  setValue("kitsu.password", password);
+  setSecretValue(u"kitsu.password"_s, password);
 }
 
 void Accounts::setMyanimelistAuthenticated(bool authenticated) {
@@ -169,11 +180,11 @@ void Accounts::setMyanimelistUsername(const std::string& username) const {
 }
 
 void Accounts::setMyanimelistAccessToken(const std::string& accessToken) const {
-  setValue("myanimelist.accessToken", accessToken);
+  setSecretValue(u"myanimelist.accessToken"_s, accessToken);
 }
 
 void Accounts::setMyanimelistRefreshToken(const std::string& refreshToken) const {
-  setValue("myanimelist.refreshToken", refreshToken);
+  setSecretValue(u"myanimelist.refreshToken"_s, refreshToken);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

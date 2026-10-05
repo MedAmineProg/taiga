@@ -22,6 +22,7 @@
 #include <QNetworkReply>
 #include <QRestReply>
 
+#include "base/http.hpp"
 #include "base/log.hpp"
 #include "base/string.hpp"
 #include "taiga/application.hpp"
@@ -63,7 +64,8 @@ NetworkAccessManager::NetworkAccessManager(QObject* parent) : QNetworkAccessMana
     setProxy(proxy);
   }
 
-  connect(this, &QNetworkAccessManager::finished, this, [](QNetworkReply* reply) {
+  connect(this, &QNetworkAccessManager::finished, this, [this](QNetworkReply* reply) {
+    handleRateLimit(reply);
     if (!app()->isDebug()) return;
     qDebug() << "Response status:"
              << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -83,6 +85,36 @@ QHttpHeaders NetworkAccessManager::commonHeaders() {
   headers.append(QHttpHeaders::WellKnownHeader::UserAgent, userAgentString());
 
   return headers;
+}
+
+bool NetworkAccessManager::isPaused() const {
+  return pausedUntil_.isValid() && QDateTime::currentDateTimeUtc() < pausedUntil_;
+}
+
+std::optional<QDateTime> NetworkAccessManager::pausedUntil() const {
+  return isPaused() ? std::optional{pausedUntil_} : std::nullopt;
+}
+
+void NetworkAccessManager::handleRateLimit(const QNetworkReply* reply) {
+  constexpr int kDefaultDelaySecs = 60;
+  constexpr int kMaxDelaySecs = 60 * 60;
+
+  const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+  if (status != 429 && status != 503) return;
+
+  const auto now = QDateTime::currentDateTimeUtc();
+  auto until = now.addSecs(kDefaultDelaySecs);
+
+  if (const auto retryAfter = base::parseRetryAfter(reply->rawHeader("Retry-After"), now)) {
+    until = std::max(*retryAfter, now);
+  }
+
+  until = std::min(until, now.addSecs(kMaxDelaySecs));
+  if (!pausedUntil_.isValid() || until > pausedUntil_) {
+    pausedUntil_ = until;
+    qWarning() << u"Server asked to slow down (HTTP %1), pausing until %2"_s.arg(status).arg(
+        pausedUntil_.toLocalTime().toString(Qt::ISODate));
+  }
 }
 
 bool isDdosProtectionActive(const QRestReply& reply) {
