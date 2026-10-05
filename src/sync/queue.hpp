@@ -27,7 +27,7 @@
 
 #include "media/anime_list.hpp"
 
-namespace sync {
+namespace taiga::sync {
 
 struct QueueItem {
   int anime_id = 0;
@@ -103,4 +103,4 @@ private:
 
 inline Queue queue;
 
-}  // namespace sync
+}  // namespace taiga::sync

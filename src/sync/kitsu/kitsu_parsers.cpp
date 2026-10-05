@@ -30,7 +30,7 @@
 #include "sync/kitsu/kitsu_ratings.hpp"
 #include "sync/service.hpp"
 
-namespace sync::kitsu {
+namespace taiga::sync::kitsu {
 
 namespace {
 
@@ -200,4 +200,4 @@ std::optional<anime::list::Entry> parseListEntry(const QJsonValue& json, const i
   };
 }
 
-}  // namespace sync::kitsu
+}  // namespace taiga::sync::kitsu

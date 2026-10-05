@@ -60,15 +60,15 @@ NavigationWidget::NavigationWidget(QWidget* parent) : QTreeWidget(parent) {
     emit currentListStatusChanged(status);
   });
 
-  connect(&sync::queue, &sync::Queue::changed, this, &NavigationWidget::refresh);
+  connect(&taiga::sync::queue, &taiga::sync::Queue::changed, this, &NavigationWidget::refresh);
 
-  const QList<sync::Service*> services{
-      sync::anilist::Service::instance(),
-      sync::kitsu::Service::instance(),
-      sync::myanimelist::Service::instance(),
+  const QList<taiga::sync::Service*> services{
+      taiga::sync::anilist::Service::instance(),
+      taiga::sync::kitsu::Service::instance(),
+      taiga::sync::myanimelist::Service::instance(),
   };
   for (auto* service : services) {
-    connect(service, &sync::Service::listEntriesFetched, this, &NavigationWidget::refresh);
+    connect(service, &taiga::sync::Service::listEntriesFetched, this, &NavigationWidget::refresh);
   }
 }
 
@@ -102,7 +102,7 @@ void NavigationWidget::refresh() {
   }
 
   auto historyItem = addItem("History", "history", MainWindowPage::History);
-  setItemData(historyItem, NavigationItemDataRole::Counter, sync::queue.count());
+  setItemData(historyItem, NavigationItemDataRole::Counter, taiga::sync::queue.count());
   addItem("Statistics", "bar_chart", MainWindowPage::Statistics);
 
   addSeparator();

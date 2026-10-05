@@ -26,6 +26,7 @@
 #include <format>
 
 #include "base/chrono.hpp"
+#include "base/qdate.hpp"
 #include "base/string.hpp"
 #include "media/anime.hpp"
 #include "media/anime_list.hpp"
@@ -64,7 +65,7 @@ QString formatScore(const double value) {
 }
 
 QString formatDate(const base::Date& date, QString placeholder) {
-  return date.ok() ? formatDate(QDate(date), placeholder) : placeholder;
+  return date.ok() ? formatDate(base::toQDate(date), placeholder) : placeholder;
 }
 
 QString formatDate(const QDate date, QString placeholder) {

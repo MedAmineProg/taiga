@@ -15,6 +15,11 @@ find_package(Qt6 REQUIRED COMPONENTS
 	Widgets
 )
 
+# Media players are detected via MPRIS on Linux.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	find_package(Qt6 REQUIRED COMPONENTS DBus)
+endif()
+
 qt_standard_project_setup(
 	REQUIRES 6.8
 )

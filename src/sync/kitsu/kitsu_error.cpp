@@ -29,7 +29,7 @@
 #include "sync/service.hpp"
 #include "taiga/network.hpp"
 
-namespace sync::kitsu {
+namespace taiga::sync::kitsu {
 
 namespace {
 
@@ -69,11 +69,11 @@ bool isTokenExpired(const QRestReply& reply) {
   return reply.httpStatus() == 401;
 }
 
-void handleError(sync::Service& service, QRestReply& reply, const QString& message) {
+void handleError(taiga::sync::Service& service, QRestReply& reply, const QString& message) {
   handleError(service, reply, reply.readJson(), message);
 }
 
-void handleError(sync::Service& service, QRestReply& reply,
+void handleError(taiga::sync::Service& service, QRestReply& reply,
                  const std::optional<QJsonDocument>& json, const QString& message) {
   if (taiga::isDdosProtectionActive(reply)) {
     const auto server = QString::fromUtf8(reply.networkReply()->rawHeader("Server"));
@@ -98,4 +98,4 @@ void handleError(sync::Service& service, QRestReply& reply,
   }
 }
 
-}  // namespace sync::kitsu
+}  // namespace taiga::sync::kitsu

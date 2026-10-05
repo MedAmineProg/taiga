@@ -71,8 +71,8 @@ void DiscordPresence::update() {
     start_ = std::time(nullptr);
   }
 
-  const auto serviceId = sync::currentServiceId();
-  const auto slug = sync::serviceSlug(serviceId);
+  const auto serviceId = taiga::sync::currentServiceId();
+  const auto slug = taiga::sync::serviceSlug(serviceId);
 
   client_->setPresence(makePresence(
       {
@@ -91,9 +91,9 @@ void DiscordPresence::update() {
       },
       {
           .slug = slug,
-          .name = sync::serviceName(serviceId),
+          .name = taiga::sync::serviceName(serviceId),
           .username = QString::fromStdString(accounts.serviceUsername(slug.toStdString())),
-          .animePageUrl = sync::animePageUrl(item->id),
+          .animePageUrl = taiga::sync::animePageUrl(item->id),
       }));
 }
 

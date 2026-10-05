@@ -121,7 +121,7 @@ std::vector<std::string> Settings::disabledMediaPlayers() const {
 }
 
 std::string Settings::service() const {
-  return value("sync.service", sync::serviceSlug(sync::ServiceId::AniList))
+  return value("sync.service", taiga::sync::serviceSlug(taiga::sync::ServiceId::AniList))
       .toString()
       .toStdString();
 }

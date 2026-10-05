@@ -23,6 +23,7 @@
 #include <ranges>
 
 #include "base/chrono.hpp"
+#include "base/qdate.hpp"
 #include "media/anime.hpp"
 #include "media/anime_db.hpp"
 #include "taiga/settings.hpp"
@@ -31,7 +32,7 @@ namespace {
 
 FuzzyDate dateInJapan() {
   static const auto tz = QTimeZone{"Asia/Tokyo"};
-  return FuzzyDate{QDateTime::currentDateTime(tz).date().toStdSysDays()};
+  return FuzzyDate{base::fromQDate(QDateTime::currentDateTime(tz).date())};
 }
 
 }  // namespace

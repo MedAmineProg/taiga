@@ -45,10 +45,10 @@ std::string toStdString(const QLineEdit* lineEdit) {
 
 SettingsPageAccounts::SettingsPageAccounts(Ui::SettingsDialog* ui, QDialog* dialog)
     : SettingsPage(ui, dialog) {
-  using sync::ServiceId;
+  using taiga::sync::ServiceId;
 
   for (const auto id : {ServiceId::AniList, ServiceId::Kitsu, ServiceId::MyAnimeList}) {
-    ui_->serviceComboBox->addItem(sync::serviceName(id), sync::serviceSlug(id));
+    ui_->serviceComboBox->addItem(taiga::sync::serviceName(id), taiga::sync::serviceSlug(id));
   }
 
   connect(ui_->serviceComboBox, &QComboBox::currentIndexChanged, this,
@@ -99,12 +99,12 @@ void SettingsPageAccounts::apply() const {
 }
 
 void SettingsPageAccounts::updateVisibleGroup() {
-  using sync::ServiceId;
+  using taiga::sync::ServiceId;
 
   const auto slug = ui_->serviceComboBox->currentData().toString();
-  ui_->anilistGroupBox->setVisible(slug == sync::serviceSlug(ServiceId::AniList));
-  ui_->kitsuGroupBox->setVisible(slug == sync::serviceSlug(ServiceId::Kitsu));
-  ui_->myanimelistGroupBox->setVisible(slug == sync::serviceSlug(ServiceId::MyAnimeList));
+  ui_->anilistGroupBox->setVisible(slug == taiga::sync::serviceSlug(ServiceId::AniList));
+  ui_->kitsuGroupBox->setVisible(slug == taiga::sync::serviceSlug(ServiceId::Kitsu));
+  ui_->myanimelistGroupBox->setVisible(slug == taiga::sync::serviceSlug(ServiceId::MyAnimeList));
 }
 
 }  // namespace gui

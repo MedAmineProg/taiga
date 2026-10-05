@@ -29,7 +29,7 @@
 #include "media/anime.hpp"
 #include "media/anime_list.hpp"
 
-namespace sync::myanimelist {
+namespace taiga::sync::myanimelist {
 
 anime::AgeRating parseAgeRating(const QString& value) {
   using anime::AgeRating;
@@ -175,4 +175,4 @@ std::optional<anime::list::Entry> parseListEntry(const QJsonValue& json, const i
   };
 }
 
-}  // namespace sync::myanimelist
+}  // namespace taiga::sync::myanimelist

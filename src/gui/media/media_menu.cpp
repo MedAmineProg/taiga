@@ -120,7 +120,7 @@ void MediaMenu::clearDateStarted() const {
 void MediaMenu::copyLinks() const {
   QList<QString> links;
   for (const auto& item : m_items) {
-    links.push_back(sync::animePageUrl(item.id));
+    links.push_back(taiga::sync::animePageUrl(item.id));
   }
   QGuiApplication::clipboard()->setText(links.join("\n"));
 }
@@ -265,7 +265,7 @@ void MediaMenu::playRandomEpisode() const {
 
 void MediaMenu::refresh() const {
   for (const auto& item : m_items) {
-    sync::fetchAnime(item.id);
+    taiga::sync::fetchAnime(item.id);
   }
 }
 
@@ -299,8 +299,8 @@ void MediaMenu::searchAniDB() const {
 
 void MediaMenu::searchAniList() const {
   for (const auto& item : m_items) {
-    if (sync::currentServiceId() == sync::ServiceId::AniList) {
-      QUrl url{sync::animePageUrl(item.id)};
+    if (taiga::sync::currentServiceId() == taiga::sync::ServiceId::AniList) {
+      QUrl url{taiga::sync::animePageUrl(item.id)};
       QDesktopServices::openUrl(url);
     } else {
       QUrl url{"https://anilist.co/search/anime"};
@@ -322,8 +322,8 @@ void MediaMenu::searchANN() const {
 
 void MediaMenu::searchKitsu() const {
   for (const auto& item : m_items) {
-    if (sync::currentServiceId() == sync::ServiceId::Kitsu) {
-      QUrl url{sync::animePageUrl(item.id)};
+    if (taiga::sync::currentServiceId() == taiga::sync::ServiceId::Kitsu) {
+      QUrl url{taiga::sync::animePageUrl(item.id)};
       QDesktopServices::openUrl(url);
     } else {
       QUrl url{"https://kitsu.app/anime"};
@@ -335,8 +335,8 @@ void MediaMenu::searchKitsu() const {
 
 void MediaMenu::searchMyAnimeList() const {
   for (const auto& item : m_items) {
-    if (sync::currentServiceId() == sync::ServiceId::MyAnimeList) {
-      QUrl url{sync::animePageUrl(item.id)};
+    if (taiga::sync::currentServiceId() == taiga::sync::ServiceId::MyAnimeList) {
+      QUrl url{taiga::sync::animePageUrl(item.id)};
       QDesktopServices::openUrl(url);
     } else {
       QUrl url{"https://myanimelist.net/anime.php"};

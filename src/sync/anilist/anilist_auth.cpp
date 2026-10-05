@@ -25,7 +25,7 @@
 #include "sync/anilist/anilist_utils.hpp"
 #include "taiga/accounts.hpp"
 
-namespace sync::anilist {
+namespace taiga::sync::anilist {
 
 void Service::authenticateUser() {
   const QJsonDocument data{QJsonObject{
@@ -59,4 +59,4 @@ void Service::authenticateUser() {
   manager_.post(api_.createRequest(), data, this, callback);
 }
 
-}  // namespace sync::anilist
+}  // namespace taiga::sync::anilist

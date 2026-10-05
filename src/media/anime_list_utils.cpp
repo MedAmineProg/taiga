@@ -24,6 +24,7 @@
 #include <optional>
 #include <ranges>
 
+#include "base/qdate.hpp"
 #include "media/anime.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_history.hpp"
@@ -49,7 +50,7 @@ Entry entryWithEpisodeWatched(const Details& item, const Entry* entry, const int
   auto updated = isInList(entry) ? *entry : Entry{.anime_id = item.id};
 
   const bool isFinalEpisode = item.episode_count > 0 && number == item.episode_count;
-  const FuzzyDate today{QDate::currentDate().toStdSysDays()};
+  const FuzzyDate today{base::fromQDate(QDate::currentDate())};
 
   updated.watched_episodes = number;
 
@@ -99,7 +100,7 @@ void save(Entry entry) {
     historyTimes.append(entry.last_updated);
   }
 
-  sync::queue.push(entry.anime_id, dirty);
+  taiga::sync::queue.push(entry.anime_id, dirty);
 
   if (!UndoStack::isSuppressed()) {
     static QElapsedTimer clock;
@@ -135,7 +136,7 @@ void undo(const int groupId) {
     const auto current = db.entry(change.anime_id);
     if (current && current->id == kUnknownId) {
       // It was never sent to the service, so there's nothing to delete there.
-      sync::queue.pop(change.anime_id);
+      taiga::sync::queue.pop(change.anime_id);
       db.deleteEntry(change.anime_id);
     } else {
       remove(change.anime_id);
@@ -153,7 +154,7 @@ void remove(const int animeId) {
 
   db.updateEntry(updated);
 
-  sync::queue.pushDelete(animeId);
+  taiga::sync::queue.pushDelete(animeId);
 }
 
 }  // namespace anime::list

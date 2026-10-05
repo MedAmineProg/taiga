@@ -21,8 +21,9 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QLocalServer>
+#include <QLockFile>
 #include <QPointer>
-#include <QSharedMemory>
+#include <memory>
 
 namespace gui {
 class MainWindow;
@@ -62,7 +63,7 @@ private:
   } options_;
 
   QCommandLineParser parser_;
-  QSharedMemory shared_memory_;
+  std::unique_ptr<QLockFile> instance_lock_;
   QLocalServer local_server_;
   QPointer<gui::MainWindow> window_;
 };

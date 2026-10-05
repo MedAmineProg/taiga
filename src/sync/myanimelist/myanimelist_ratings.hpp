@@ -21,13 +21,13 @@
 #include <QList>
 #include <QString>
 
-namespace sync {
+namespace taiga::sync {
 struct Rating;
 }
 
-namespace sync::myanimelist {
+namespace taiga::sync::myanimelist {
 
-QList<sync::Rating> ratingList();
+QList<taiga::sync::Rating> ratingList();
 QString formatRating(const int value);
 
-}  // namespace sync::myanimelist
+}  // namespace taiga::sync::myanimelist

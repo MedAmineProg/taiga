@@ -177,7 +177,7 @@ void MainWindow::initActions() {
   ui_->actionProfile->setToolTip(tr("Profile"));
   ui_->actionProfile->setDisabled(true);  // placeholder
   ui_->actionSynchronize->setToolTip(
-      tr("Synchronize with %1").arg(sync::serviceName(sync::currentServiceId())));
+      tr("Synchronize with %1").arg(taiga::sync::serviceName(taiga::sync::currentServiceId())));
 
   connect(ui_->actionAddNewFolder, &QAction::triggered, this, &MainWindow::addNewFolder);
   connect(ui_->actionExit, &QAction::triggered, this, &QApplication::quit, Qt::QueuedConnection);
@@ -329,18 +329,18 @@ void MainWindow::initStatusbar() {
 
   m_statusBarController = new StatusBarController(this, statusbar, spinner);
 
-  const QList<sync::Service*> services{
-      sync::anilist::Service::instance(),
-      sync::kitsu::Service::instance(),
-      sync::myanimelist::Service::instance(),
+  const QList<taiga::sync::Service*> services{
+      taiga::sync::anilist::Service::instance(),
+      taiga::sync::kitsu::Service::instance(),
+      taiga::sync::myanimelist::Service::instance(),
   };
   for (auto* service : services) {
-    connect(service, &sync::Service::authenticationCompleted, this,
+    connect(service, &taiga::sync::Service::authenticationCompleted, this,
             [this](const bool authenticated) {
               if (!authenticated) return;
 
-              const auto sender_service = qobject_cast<sync::Service*>(sender());
-              const auto slug = sync::serviceSlug(sender_service->id()).toStdString();
+              const auto sender_service = qobject_cast<taiga::sync::Service*>(sender());
+              const auto slug = taiga::sync::serviceSlug(sender_service->id()).toStdString();
               const auto username = taiga::accounts.serviceUsername(slug);
 
               m_statusBarController->showMessage({
@@ -349,38 +349,38 @@ void MainWindow::initStatusbar() {
                   .spin = false,
               });
             });
-    connect(service, &sync::Service::listEntriesFetched, this, [this]() {
+    connect(service, &taiga::sync::Service::listEntriesFetched, this, [this]() {
       m_statusBarController->clearMessage(StatusBarController::Source::Sync);
       setEnabled(true);
     });
-    connect(service, &sync::Service::errorOccurred, this, [this](const QString& message) {
-      const auto sender_service = qobject_cast<sync::Service*>(sender());
+    connect(service, &taiga::sync::Service::errorOccurred, this, [this](const QString& message) {
+      const auto sender_service = qobject_cast<taiga::sync::Service*>(sender());
       m_statusBarController->showMessage({
           .source = StatusBarController::Source::Sync,
-          .text = sync::tagMessage(sender_service->id(), message),
+          .text = taiga::sync::tagMessage(sender_service->id(), message),
           .spin = false,
       });
       setEnabled(true);
     });
-    connect(service, &sync::Service::transferProgress, this,
+    connect(service, &taiga::sync::Service::transferProgress, this,
             [this](const qint64 current, const qint64 total) {
               m_statusBarController->showMessage({
                   .source = StatusBarController::Source::Sync,
                   .text = tr("Synchronizing with %1... (%2)")
-                              .arg(sync::serviceName(sync::currentServiceId()))
+                              .arg(taiga::sync::serviceName(taiga::sync::currentServiceId()))
                               .arg(gui::formatTransferProgress(current, total)),
               });
             });
   }
 
-  connect(&sync::queue, &sync::Queue::changed, this, [this]() {
-    if (sync::queue.count() == 0) {
+  connect(&taiga::sync::queue, &taiga::sync::Queue::changed, this, [this]() {
+    if (taiga::sync::queue.count() == 0) {
       m_statusBarController->clearMessage(StatusBarController::Source::Sync);
       setEnabled(true);
     }
   });
 
-  connect(&sync::queue, &sync::Queue::processing, this, [this](const int animeId) {
+  connect(&taiga::sync::queue, &taiga::sync::Queue::processing, this, [this](const int animeId) {
     const auto item = anime::db.item(animeId);
     const auto entry = anime::db.entry(animeId);
     if (!item || !entry) return;
@@ -402,16 +402,17 @@ void MainWindow::initStatusbar() {
     });
   });
 
-  connect(&sync::queue, &sync::Queue::queuedWhileUnauthenticated, this, [this](const int animeId) {
-    const auto item = anime::db.item(animeId);
-    if (!item) return;
+  connect(&taiga::sync::queue, &taiga::sync::Queue::queuedWhileUnauthenticated, this,
+          [this](const int animeId) {
+            const auto item = anime::db.item(animeId);
+            if (!item) return;
 
-    m_statusBarController->showMessage({
-        .source = StatusBarController::Source::Sync,
-        .text = tr("%1 is queued for update.").arg(anime::preferredTitle(*item)),
-        .spin = false,
-    });
-  });
+            m_statusBarController->showMessage({
+                .source = StatusBarController::Source::Sync,
+                .text = tr("%1 is queued for update.").arg(anime::preferredTitle(*item)),
+                .spin = false,
+            });
+          });
 
   connect(&anime::db, &anime::Database::itemDeleted, this, [this](const int, const QString& title) {
     if (title.isEmpty()) return;
@@ -579,16 +580,17 @@ void MainWindow::support() const {
 void MainWindow::synchronize() {
   setEnabled(false);
 
-  const auto serviceName = sync::serviceName(sync::currentServiceId());
-  const auto text = sync::willAuthenticate() ? tr("Authenticating with %1...").arg(serviceName)
-                                             : tr("Synchronizing with %1...").arg(serviceName);
+  const auto serviceName = taiga::sync::serviceName(taiga::sync::currentServiceId());
+  const auto text = taiga::sync::willAuthenticate()
+                        ? tr("Authenticating with %1...").arg(serviceName)
+                        : tr("Synchronizing with %1...").arg(serviceName);
 
   m_statusBarController->showMessage({
       .source = StatusBarController::Source::Sync,
       .text = text,
   });
 
-  if (!sync::synchronize()) {
+  if (!taiga::sync::synchronize()) {
     m_statusBarController->clearMessage(StatusBarController::Source::Sync);
     setEnabled(true);
   }

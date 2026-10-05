@@ -27,6 +27,7 @@
 #include "taiga/settings.hpp"
 #include "track/episode.hpp"
 #include "track/media_player.hpp"
+#include "track/player_media.hpp"
 #include "track/recognition.hpp"
 
 namespace track::media {
@@ -142,7 +143,6 @@ void Detection::setEnabled(bool enabled) {
 }
 
 void Detection::setPollingEnabled(bool enabled) {
-#ifdef Q_OS_WINDOWS
   if (enabled) {
     const auto interval = taiga::settings.mediaDetectionInterval();
     pollTimer_->start(interval);
@@ -150,7 +150,6 @@ void Detection::setPollingEnabled(bool enabled) {
     pollTimer_->stop();
     reset();
   }
-#endif
 }
 
 void Detection::poll() {
@@ -175,6 +174,43 @@ void Detection::poll() {
   currentPlayer_ = result.player;
   currentMedia_ = flattenMedia(result);
   currentWindowHandle_ = result.window.handle;
+
+  auto episode = resolveEpisode(extractMediaFields(*currentMedia_));
+  if (!episode) {
+    reset();
+    return;
+  }
+
+  const auto animeId = track::recognition::identify(*episode);
+  episode->setAnimeId(animeId);
+
+  if (hasEpisodeChanged(*episode)) {
+    currentEpisode_ = episode;
+    emit currentEpisodeChanged(episode);
+  }
+#else
+  // Media players are found by platform-specific means (e.g. MPRIS on Linux).
+  const auto candidates = findPlayerMedia();
+  const auto media = pickMedia(candidates, taiga::settings.streamingMediaEnabled());
+  if (!media) {
+    reset();
+    return;
+  }
+
+  anisthesia::Media flattened;
+  if (!media->file.isEmpty()) {
+    flattened.information.push_back({anisthesia::MediaInfoType::File, media->file.toStdString()});
+  }
+  if (!media->title.isEmpty()) {
+    flattened.information.push_back({anisthesia::MediaInfoType::Title, media->title.toStdString()});
+  }
+
+  anisthesia::Player player;
+  player.name = media->player.toStdString();
+  player.type =
+      media->webBrowser ? anisthesia::PlayerType::WebBrowser : anisthesia::PlayerType::Default;
+  currentPlayer_ = player;
+  currentMedia_ = flattened;
 
   auto episode = resolveEpisode(extractMediaFields(*currentMedia_));
   if (!episode) {

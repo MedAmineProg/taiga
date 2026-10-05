@@ -149,7 +149,7 @@ bool exportAsXml(const std::string& path) {
     xml.writeTextElement("my_finish_date", entry.date_completed.to_string());
     xml.writeTextElement("my_fansub_group", "");
     xml.writeTextElement("my_rated", "");
-    xml.writeNumberElement("my_score", sync::myanimelist::fromListScore(entry.score));
+    xml.writeNumberElement("my_score", taiga::sync::myanimelist::fromListScore(entry.score));
     xml.writeTextElement("my_dvd", "");
     xml.writeTextElement("my_storage", "");
     xml.writeTextElement("my_status", format_my_status(entry.status));
@@ -160,7 +160,7 @@ bool exportAsXml(const std::string& path) {
     xml.writeTextElement("my_tags", "");
     xml.writeNumberElement("my_rewatching", entry.rewatching);
     xml.writeNumberElement("my_rewatching_ep", entry.rewatching_ep);
-    xml.writeNumberElement("update_on_import", sync::queue.hasItem(entry.anime_id) ? 1 : 0);
+    xml.writeNumberElement("update_on_import", taiga::sync::queue.hasItem(entry.anime_id) ? 1 : 0);
     xml.writeEndElement();
   }
 

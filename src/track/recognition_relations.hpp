@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-namespace sync {
+namespace taiga::sync {
 enum class ServiceId;
 }
 

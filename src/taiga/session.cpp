@@ -22,6 +22,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include "base/qdate.hpp"
 #include "base/string.hpp"
 #include "gui/common/anime_list_view_base.hpp"
 #include "gui/models/anime_list_model.hpp"
@@ -70,7 +71,7 @@ gui::AnimeListProxyModelFilter Session::searchListFilters() const {
   if (json.isEmpty()) {
     return gui::AnimeListProxyModelFilter{
         .year   = QDate::currentDate().year(),
-        .season = static_cast<int>(anime::Season{QDate::currentDate().toStdSysDays()}.name),
+        .season = static_cast<int>(anime::Season{base::fromQDate(QDate::currentDate())}.name),
         .type   = static_cast<int>(anime::Type::Tv),
     };
   } else {

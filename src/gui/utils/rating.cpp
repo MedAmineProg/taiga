@@ -31,15 +31,15 @@
 
 namespace gui {
 
-QList<sync::Rating> currentRatingList() {
-  switch (sync::currentServiceId()) {
-    case sync::ServiceId::MyAnimeList:
-      return sync::myanimelist::ratingList();
-    case sync::ServiceId::Kitsu:
-      return sync::kitsu::ratingList(taiga::accounts.kitsuRatingSystem());
-    case sync::ServiceId::AniList:
-      return sync::anilist::ratingList(taiga::accounts.anilistRatingSystem());
-    case sync::ServiceId::Unknown:
+QList<taiga::sync::Rating> currentRatingList() {
+  switch (taiga::sync::currentServiceId()) {
+    case taiga::sync::ServiceId::MyAnimeList:
+      return taiga::sync::myanimelist::ratingList();
+    case taiga::sync::ServiceId::Kitsu:
+      return taiga::sync::kitsu::ratingList(taiga::accounts.kitsuRatingSystem());
+    case taiga::sync::ServiceId::AniList:
+      return taiga::sync::anilist::ratingList(taiga::accounts.anilistRatingSystem());
+    case taiga::sync::ServiceId::Unknown:
       break;
   }
   return {};
@@ -48,14 +48,14 @@ QList<sync::Rating> currentRatingList() {
 QString formatRating(int value, QString placeholder) {
   if (value <= 0) return placeholder;
 
-  switch (sync::currentServiceId()) {
-    case sync::ServiceId::MyAnimeList:
-      return sync::myanimelist::formatRating(value);
-    case sync::ServiceId::Kitsu:
-      return sync::kitsu::formatRating(value, taiga::accounts.kitsuRatingSystem());
-    case sync::ServiceId::AniList:
-      return sync::anilist::formatRating(value, taiga::accounts.anilistRatingSystem());
-    case sync::ServiceId::Unknown:
+  switch (taiga::sync::currentServiceId()) {
+    case taiga::sync::ServiceId::MyAnimeList:
+      return taiga::sync::myanimelist::formatRating(value);
+    case taiga::sync::ServiceId::Kitsu:
+      return taiga::sync::kitsu::formatRating(value, taiga::accounts.kitsuRatingSystem());
+    case taiga::sync::ServiceId::AniList:
+      return taiga::sync::anilist::formatRating(value, taiga::accounts.anilistRatingSystem());
+    case taiga::sync::ServiceId::Unknown:
       break;
   }
   return QString::number(value);
@@ -87,15 +87,15 @@ void setRatingComboBoxValue(QComboBox* comboBox, int score) {
 }
 
 bool usesRatingSpinBox() {
-  if (sync::currentServiceId() != sync::ServiceId::AniList) return false;
+  if (taiga::sync::currentServiceId() != taiga::sync::ServiceId::AniList) return false;
 
   switch (taiga::accounts.anilistRatingSystem()) {
-    case sync::anilist::RatingSystem::Point_100:
-    case sync::anilist::RatingSystem::Point_10_Decimal:
+    case taiga::sync::anilist::RatingSystem::Point_100:
+    case taiga::sync::anilist::RatingSystem::Point_10_Decimal:
       return true;
-    case sync::anilist::RatingSystem::Point_10:
-    case sync::anilist::RatingSystem::Point_5:
-    case sync::anilist::RatingSystem::Point_3:
+    case taiga::sync::anilist::RatingSystem::Point_10:
+    case taiga::sync::anilist::RatingSystem::Point_5:
+    case taiga::sync::anilist::RatingSystem::Point_3:
       return false;
   }
 
@@ -104,15 +104,15 @@ bool usesRatingSpinBox() {
 
 void populateRatingSpinBox(QDoubleSpinBox* spinBox) {
   switch (taiga::accounts.anilistRatingSystem()) {
-    case sync::anilist::RatingSystem::Point_10_Decimal:
+    case taiga::sync::anilist::RatingSystem::Point_10_Decimal:
       spinBox->setDecimals(1);
       spinBox->setRange(0.0, 10.0);
       spinBox->setSingleStep(0.1);
       return;
-    case sync::anilist::RatingSystem::Point_100:
-    case sync::anilist::RatingSystem::Point_10:
-    case sync::anilist::RatingSystem::Point_5:
-    case sync::anilist::RatingSystem::Point_3:
+    case taiga::sync::anilist::RatingSystem::Point_100:
+    case taiga::sync::anilist::RatingSystem::Point_10:
+    case taiga::sync::anilist::RatingSystem::Point_5:
+    case taiga::sync::anilist::RatingSystem::Point_3:
       spinBox->setDecimals(0);
       spinBox->setRange(0, 100);
       spinBox->setSingleStep(1);
@@ -122,13 +122,14 @@ void populateRatingSpinBox(QDoubleSpinBox* spinBox) {
 
 void setRatingSpinBoxValue(QDoubleSpinBox* spinBox, int score) {
   spinBox->setValue(taiga::accounts.anilistRatingSystem() ==
-                            sync::anilist::RatingSystem::Point_10_Decimal
+                            taiga::sync::anilist::RatingSystem::Point_10_Decimal
                         ? score / 10.0
                         : score);
 }
 
 int ratingSpinBoxValue(const QDoubleSpinBox* spinBox) {
-  if (taiga::accounts.anilistRatingSystem() == sync::anilist::RatingSystem::Point_10_Decimal) {
+  if (taiga::accounts.anilistRatingSystem() ==
+      taiga::sync::anilist::RatingSystem::Point_10_Decimal) {
     return static_cast<int>(std::lround(spinBox->value() * 10));
   }
   return static_cast<int>(std::lround(spinBox->value()));
