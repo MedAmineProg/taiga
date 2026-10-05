@@ -22,14 +22,17 @@
 #include <algorithm>
 #include <chrono>
 #include <format>
+#include <ranges>
 
 #include "base/file.hpp"
 #include "base/string.hpp"
 #include "compat/history.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_list_utils.hpp"
+#include "sync/retry.hpp"
 #include "sync/service.hpp"
 #include "taiga/accounts.hpp"
+#include "taiga/network.hpp"
 #include "taiga/path.hpp"
 #include "taiga/settings.hpp"
 
@@ -49,6 +52,11 @@ void Queue::init() {
   periodicTimer_->setInterval(std::chrono::minutes{5});
   connect(periodicTimer_, &QTimer::timeout, this, &Queue::processAutomatically);
   periodicTimer_->start();
+
+  // Resume when the earliest backoff or server-imposed pause expires.
+  retryTimer_ = new QTimer(this);
+  retryTimer_->setSingleShot(true);
+  connect(retryTimer_, &QTimer::timeout, this, &Queue::processAutomatically);
 
   auto db = QSqlDatabase::database();
   if (!db.open()) return;
@@ -74,6 +82,7 @@ void Queue::push(const int animeId, const anime::list::Fields dirty) {
   if (it != items_.end()) {
     it->dirty |= dirty;
     it->time = std::time(nullptr);
+    it->next_attempt = 0;
     persistItem(*it);
   } else {
     QueueItem item{
@@ -109,11 +118,23 @@ void Queue::pop(const int animeId) {
   emit changed();
 }
 
-void Queue::process() {
+void Queue::process(const bool force) {
   if (processing_ || items_.isEmpty()) return;
 
+  if (force) {
+    for (auto& item : items_) item.next_attempt = 0;
+  }
+
+  if (taiga::network()->isPaused()) {
+    scheduleRetry();
+    return;
+  }
+
   const auto item = currentItem();
-  if (!item) return;
+  if (!item) {
+    scheduleRetry();
+    return;
+  }
 
   const auto entry = anime::db.entry(item->anime_id);
   if (!entry) {
@@ -155,14 +176,17 @@ void Queue::handleResult(const bool success, const QString& error, const ListEnt
   const int animeId = *processing_;
   processing_.reset();
 
-  // On failure, record the retry.
+  // On failure, record the retry and back off, so that the item doesn't block the others.
   if (!success) {
     const auto it = findItem(animeId);
     if (it != items_.end()) {
       it->retry_count++;
       it->last_error = error.toStdString();
+      it->next_attempt = std::time(nullptr) + retryDelay(it->retry_count).count();
       persistItem(*it);
+      emit changed();
     }
+    process();
     return;
   }
 
@@ -216,11 +240,30 @@ void Queue::processAutomatically() {
   process();
 }
 
-const QueueItem* Queue::currentItem() const {
-  if (items_.isEmpty()) return nullptr;
+void Queue::scheduleRetry() {
+  if (!retryTimer_ || items_.isEmpty()) return;
 
-  const auto it = std::ranges::min_element(items_, {}, &QueueItem::time);
-  return &(*it);
+  const auto now = std::time(nullptr);
+
+  auto nextAttempt = std::ranges::min(items_ | std::views::transform(&QueueItem::next_attempt));
+  nextAttempt = std::max(nextAttempt, now);
+  if (const auto pausedUntil = taiga::network()->pausedUntil()) {
+    nextAttempt = std::max<std::time_t>(nextAttempt, pausedUntil->toSecsSinceEpoch());
+  }
+
+  retryTimer_->start(std::chrono::seconds{std::max<std::time_t>(nextAttempt - now, 1)});
+}
+
+const QueueItem* Queue::currentItem() const {
+  const auto now = std::time(nullptr);
+
+  const QueueItem* current = nullptr;
+  for (const auto& item : items_) {
+    if (item.next_attempt > now) continue;
+    if (!current || item.time < current->time) current = &item;
+  }
+
+  return current;
 }
 
 int Queue::count() const {

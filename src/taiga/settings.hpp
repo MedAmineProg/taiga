@@ -38,6 +38,9 @@ public:
 
   void init() const;
 
+  static QStringList secretKeys();
+  void initSecrets() const;
+
   Qt::ColorScheme appColorScheme() const;
   std::string appStyle() const;
   bool detectionEnabled() const;

@@ -52,6 +52,7 @@ private:
   bool hasPreviousInstance();
   void activatePreviousInstance();
   void initLogger() const;
+  void initSecrets() const;
   void onNewConnection();
   void parseCommandLine();
 

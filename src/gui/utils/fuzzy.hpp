@@ -15,43 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-#include <QColor>
-#include <QHash>
-#include <QIcon>
-#include <QObject>
+#include <QStringView>
+#include <optional>
 
 namespace gui {
 
-class Theme final : public QObject {
-  Q_OBJECT
-  Q_DISABLE_COPY_MOVE(Theme)
-
-public:
-  Theme();
-
-  const QIcon& getIcon(const QString& key, const QString& extension = QString{u"svg"},
-                       bool useSvgIconEngine = true);
-  void initStyle();
-  bool isDark() const;
-  void setColorScheme(const Qt::ColorScheme scheme);
-
-  static QColor errorColor();
-  static QColor successColor();
-  static QColor warningColor();
-
-signals:
-  void colorSchemeChanged();
-
-private:
-  void applyColorScheme();
-  QString readStylesheet(const QString& name) const;
-
-  QHash<QString, QIcon> m_icons;
-};
-
-inline Theme theme;
+// Scores how well `query` matches `text` as a case-insensitive subsequence (e.g. "fma" matches
+// "Fullmetal Alchemist"). Consecutive characters, word starts and prefixes score higher.
+// Returns `std::nullopt` if not every character of the query appears in order.
+std::optional<int> fuzzyScore(QStringView query, QStringView text);
 
 }  // namespace gui

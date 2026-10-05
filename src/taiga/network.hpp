@@ -19,8 +19,10 @@
 #pragma once
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QHttpHeaders>
 #include <QNetworkAccessManager>
+#include <optional>
 
 class QRestReply;
 
@@ -35,6 +37,16 @@ public:
   ~NetworkAccessManager() = default;
 
   static QHttpHeaders commonHeaders();
+
+  // Servers ask clients to slow down via 429 or 503 responses, optionally with a `Retry-After`
+  // header. Non-urgent requests (e.g. the sync queue) should wait until the pause expires.
+  bool isPaused() const;
+  std::optional<QDateTime> pausedUntil() const;
+
+private:
+  void handleRateLimit(const QNetworkReply* reply);
+
+  QDateTime pausedUntil_;
 };
 
 inline NetworkAccessManager* network() {

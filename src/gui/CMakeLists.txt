@@ -41,6 +41,8 @@ target_sources(taiga-gui PRIVATE
 
 	main/about_dialog.cpp
 	main/about_dialog.hpp
+	main/command_palette.cpp
+	main/command_palette.hpp
 	main/main_window.cpp
 	main/main_window.hpp
 	main/navigation_controller.cpp
@@ -98,6 +100,8 @@ target_sources(taiga-gui PRIVATE
 
 	utils/format.cpp
 	utils/format.hpp
+	utils/fuzzy.cpp
+	utils/fuzzy.hpp
 	utils/image_provider.cpp
 	utils/image_provider.hpp
 	utils/painter_state_saver.hpp

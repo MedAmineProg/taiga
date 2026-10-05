@@ -9,10 +9,14 @@ target_sources(taiga PRIVATE
 	base/chrono.hpp
 	base/file.cpp
 	base/file.hpp
+	base/http.cpp
+	base/http.hpp
 	base/log.cpp
 	base/log.hpp
 	base/preprocessor.h
 	base/rss.hpp
+	base/secret_store.cpp
+	base/secret_store.hpp
 	base/settings.cpp
 	base/settings.hpp
 	base/string.cpp
@@ -82,6 +86,7 @@ target_sources(taiga PRIVATE
 	sync/myanimelist/myanimelist_utils.hpp
 	sync/queue.cpp
 	sync/queue.hpp
+	sync/retry.hpp
 	sync/service.cpp
 	sync/service.hpp
 
