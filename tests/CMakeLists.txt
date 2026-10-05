@@ -23,3 +23,4 @@ taiga_add_test(test_discord ${CMAKE_SOURCE_DIR}/src/link/discord_frames.cpp
 	${CMAKE_SOURCE_DIR}/src/taiga/discord_activity.cpp)
 find_package(Qt6 REQUIRED COMPONENTS Network)
 target_link_libraries(test_discord PRIVATE Qt6::Network)
+taiga_add_test(test_player_media ${CMAKE_SOURCE_DIR}/src/track/player_media_utils.cpp)

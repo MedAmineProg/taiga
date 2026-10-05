@@ -133,6 +133,9 @@ target_sources(taiga PRIVATE
 	track/media.hpp
 	track/media_player.cpp
 	track/media_player.hpp
+	track/player_media.cpp
+	track/player_media.hpp
+	track/player_media_utils.cpp
 	track/play.cpp
 	track/play.hpp
 	track/recognition.cpp
@@ -171,6 +174,10 @@ target_link_libraries(taiga PRIVATE
 	taiga-gui
 	taiga-resources
 )
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(taiga PRIVATE Qt6::DBus)
+endif()
 
 if (TAIGA_PORTABLE)
 	target_compile_definitions(taiga PRIVATE TAIGA_PORTABLE)
