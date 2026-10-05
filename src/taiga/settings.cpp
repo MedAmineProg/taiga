@@ -86,6 +86,30 @@ bool Settings::calendarWatchingOnly() const {
   return value("calendar.watchingOnly", false).toBool();
 }
 
+QString Settings::discordApplicationId() const {
+  return value("sharing.discord.applicationId", QString{kDiscordApplicationId}).toString();
+}
+
+bool Settings::discordEnabled() const {
+  return value("sharing.discord.enabled", false).toBool();
+}
+
+bool Settings::discordShowButton() const {
+  return value("sharing.discord.showButton", true).toBool();
+}
+
+bool Settings::discordShowGroup() const {
+  return value("sharing.discord.showGroup", true).toBool();
+}
+
+bool Settings::discordShowTime() const {
+  return value("sharing.discord.showTime", true).toBool();
+}
+
+bool Settings::discordShowUsername() const {
+  return value("sharing.discord.showUsername", true).toBool();
+}
+
 bool Settings::detectionEnabled() const {
   return value("track.detection.enabled", true).toBool();
 }
@@ -137,6 +161,10 @@ std::string Settings::proxyUsername() const {
 
 std::string Settings::proxyPassword() const {
   return secretValue(u"network.proxy.password"_s);
+}
+
+bool Settings::sharingEnabled() const {
+  return value("sharing.enabled", true).toBool();
 }
 
 bool Settings::streamingMediaEnabled() const {
@@ -245,6 +273,30 @@ void Settings::setStreamingMediaEnabled(const bool enabled) const {
 
 void Settings::setCalendarNotificationsEnabled(const bool enabled) const {
   setValue("calendar.notifications", enabled);
+}
+
+void Settings::setDiscordEnabled(const bool enabled) const {
+  setValue("sharing.discord.enabled", enabled);
+}
+
+void Settings::setDiscordShowButton(const bool enabled) const {
+  setValue("sharing.discord.showButton", enabled);
+}
+
+void Settings::setDiscordShowGroup(const bool enabled) const {
+  setValue("sharing.discord.showGroup", enabled);
+}
+
+void Settings::setDiscordShowTime(const bool enabled) const {
+  setValue("sharing.discord.showTime", enabled);
+}
+
+void Settings::setDiscordShowUsername(const bool enabled) const {
+  setValue("sharing.discord.showUsername", enabled);
+}
+
+void Settings::setSharingEnabled(const bool enabled) const {
+  setValue("sharing.enabled", enabled);
 }
 
 void Settings::setListUpdateNotificationsEnabled(const bool enabled) const {

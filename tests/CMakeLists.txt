@@ -18,3 +18,8 @@ taiga_add_test(test_stats ${CMAKE_SOURCE_DIR}/src/media/stats.cpp)
 taiga_add_test(test_airing_schedule ${CMAKE_SOURCE_DIR}/src/media/airing_schedule.cpp)
 taiga_add_test(test_list_undo ${CMAKE_SOURCE_DIR}/src/media/list_undo.cpp ${CMAKE_SOURCE_DIR}/src/media/list_undo.hpp
 	${CMAKE_SOURCE_DIR}/src/base/chrono.cpp)
+taiga_add_test(test_discord ${CMAKE_SOURCE_DIR}/src/link/discord_frames.cpp
+	${CMAKE_SOURCE_DIR}/src/link/discord_ipc.cpp ${CMAKE_SOURCE_DIR}/src/link/discord_ipc.hpp
+	${CMAKE_SOURCE_DIR}/src/taiga/discord_activity.cpp)
+find_package(Qt6 REQUIRED COMPONENTS Network)
+target_link_libraries(test_discord PRIVATE Qt6::Network)

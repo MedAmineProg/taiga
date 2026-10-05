@@ -60,6 +60,7 @@
 #include "sync/service.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/application.hpp"
+#include "taiga/discord_presence.hpp"
 #include "taiga/session.hpp"
 #include "taiga/settings.hpp"
 #include "track/media.hpp"
@@ -201,6 +202,12 @@ void MainWindow::initActions() {
   ui_->actionToggleDetection->setChecked(track::media::detection()->isEnabled());
   connect(ui_->actionToggleDetection, &QAction::toggled, this,
           [](const bool checked) { track::media::detection()->setEnabled(checked); });
+
+  ui_->actionToggleSharing->setChecked(taiga::settings.sharingEnabled());
+  connect(ui_->actionToggleSharing, &QAction::toggled, this, [](const bool checked) {
+    taiga::settings.setSharingEnabled(checked);
+    taiga::discordPresence()->update();
+  });
 
   ui_->actionToggleSynchronization->setChecked(taiga::settings.syncEnabled());
   connect(ui_->actionToggleSynchronization, &QAction::toggled, this,

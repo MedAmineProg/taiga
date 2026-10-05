@@ -681,6 +681,83 @@
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="discordPage">
+          <layout class="QVBoxLayout" name="discordLayout">
+           <item>
+            <widget class="QCheckBox" name="discordEnabledCheckBox">
+             <property name="text">
+              <string>Show what I'm watching on my Discord profile</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="discordOptionsGroupBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="title">
+              <string>Details</string>
+             </property>
+             <layout class="QVBoxLayout" name="discordOptionsLayout">
+              <item>
+               <widget class="QCheckBox" name="discordUsernameCheckBox">
+                <property name="text">
+                 <string>Show my username</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="discordGroupCheckBox">
+                <property name="text">
+                 <string>Show the release group</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="discordTimeCheckBox">
+                <property name="text">
+                 <string>Show elapsed time</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="discordButtonCheckBox">
+                <property name="text">
+                 <string>Show a button that links to the anime</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="discordHintLabel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Requires the Discord desktop app. Private list entries are never shown.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="discordVerticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
          <widget class="QWidget" name="advancedPage">
           <layout class="QVBoxLayout" name="verticalLayout_12">
            <item>
