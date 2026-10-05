@@ -25,6 +25,8 @@
 #include <optional>
 
 #include "base/string.hpp"
+#include "gui/calendar/airing_notifier.hpp"
+#include "gui/calendar/calendar_widget.hpp"
 #include "gui/common/spinner_widget.hpp"
 #include "gui/history/history_widget.hpp"
 #include "gui/home/home_widget.hpp"
@@ -240,6 +242,11 @@ void MainWindow::initPage(MainWindowPage page) {
     case MainWindowPage::Profile:
       break;
 
+    case MainWindowPage::Calendar:
+      m_calendarWidget = new CalendarWidget(ui_->calendarPage);
+      init_page(ui_->calendarPage, m_calendarWidget);
+      break;
+
     case MainWindowPage::Statistics:
       m_statsWidget = new StatsWidget(ui_->statsPage);
       init_page(ui_->statsPage, m_statsWidget);
@@ -411,6 +418,7 @@ void MainWindow::initTrayIcon() {
   menu->addAction(ui_->actionExit);
 
   m_trayIcon = new TrayIcon(this, windowIcon(), menu);
+  new AiringNotifier(this, m_trayIcon);
 
   connect(m_trayIcon, &TrayIcon::activated, this, &MainWindow::displayWindow);
   connect(m_trayIcon, &TrayIcon::messageClicked, this, &MainWindow::displayWindow);

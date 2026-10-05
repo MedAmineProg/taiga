@@ -7,6 +7,11 @@ qt_add_ui(taiga-gui SOURCES
 )
 
 target_sources(taiga-gui PRIVATE
+	calendar/airing_notifier.cpp
+	calendar/airing_notifier.hpp
+	calendar/calendar_widget.cpp
+	calendar/calendar_widget.hpp
+
 	common/anime_list_item_delegate.cpp
 	common/anime_list_item_delegate.hpp
 	common/anime_list_item_delegate_cards.cpp

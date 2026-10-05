@@ -40,6 +40,7 @@ enum class MainWindowPage {
   Torrents,
   Profile,
   Statistics,
+  Calendar,
 };
 
 class NavigationController final : public QObject {

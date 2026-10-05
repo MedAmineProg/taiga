@@ -77,6 +77,7 @@ void NavigationWidget::refresh() {
   clear();
 
   addItem("Home", "home", MainWindowPage::Home);
+  addItem("Calendar", "calendar_month", MainWindowPage::Calendar);
   addItem("Search", "search", MainWindowPage::Search);
   addSeparator();
 

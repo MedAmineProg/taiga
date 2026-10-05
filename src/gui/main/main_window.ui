@@ -85,6 +85,7 @@
         </layout>
        </widget>
        <widget class="QWidget" name="statsPage"/>
+       <widget class="QWidget" name="calendarPage"/>
       </widget>
      </widget>
     </item>

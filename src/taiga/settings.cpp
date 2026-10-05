@@ -78,6 +78,14 @@ std::string Settings::appStyle() const {
   return value("app.style", defaultStyle).toString().toStdString();
 }
 
+bool Settings::calendarNotificationsEnabled() const {
+  return value("calendar.notifications", false).toBool();
+}
+
+bool Settings::calendarWatchingOnly() const {
+  return value("calendar.watchingOnly", false).toBool();
+}
+
 bool Settings::detectionEnabled() const {
   return value("track.detection.enabled", true).toBool();
 }
@@ -229,6 +237,14 @@ void Settings::setProxyPassword(const std::string& password) const {
 
 void Settings::setStreamingMediaEnabled(const bool enabled) const {
   setValue("recognition.streaming.enabled", enabled);
+}
+
+void Settings::setCalendarNotificationsEnabled(const bool enabled) const {
+  setValue("calendar.notifications", enabled);
+}
+
+void Settings::setCalendarWatchingOnly(const bool enabled) const {
+  setValue("calendar.watchingOnly", enabled);
 }
 
 void Settings::setSyncEnabled(const bool enabled) const {

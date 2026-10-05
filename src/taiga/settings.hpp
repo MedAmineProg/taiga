@@ -43,6 +43,8 @@ public:
 
   Qt::ColorScheme appColorScheme() const;
   std::string appStyle() const;
+  bool calendarNotificationsEnabled() const;
+  bool calendarWatchingOnly() const;
   bool detectionEnabled() const;
   std::vector<std::string> disabledMediaPlayers() const;
   std::string service() const;
@@ -74,6 +76,8 @@ public:
   void setProxyUsername(const std::string& username) const;
   void setProxyPassword(const std::string& password) const;
   void setStreamingMediaEnabled(const bool enabled) const;
+  void setCalendarNotificationsEnabled(const bool enabled) const;
+  void setCalendarWatchingOnly(const bool enabled) const;
   void setSyncEnabled(const bool enabled) const;
   void setTitleLanguage(const anime::TitleLanguage language) const;
   void setUpdateDelay(const std::chrono::seconds delay) const;
