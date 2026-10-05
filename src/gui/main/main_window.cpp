@@ -39,6 +39,7 @@
 #include "gui/main/status_bar_controller.hpp"
 #include "gui/search/search_widget.hpp"
 #include "gui/settings/settings_dialog.hpp"
+#include "gui/stats/stats_widget.hpp"
 #include "gui/utils/format.hpp"
 #include "gui/utils/theme.hpp"
 #include "gui/utils/tray_icon.hpp"
@@ -237,6 +238,11 @@ void MainWindow::initPage(MainWindowPage page) {
       break;
 
     case MainWindowPage::Profile:
+      break;
+
+    case MainWindowPage::Statistics:
+      m_statsWidget = new StatsWidget(ui_->statsPage);
+      init_page(ui_->statsPage, m_statsWidget);
       break;
   }
 
