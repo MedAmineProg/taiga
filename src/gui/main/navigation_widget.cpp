@@ -76,7 +76,7 @@ void NavigationWidget::refresh() {
   setUpdatesEnabled(false);
   clear();
 
-  addItem("Home", "home", MainWindowPage::Home)->setDisabled(true);  // placeholder
+  addItem("Home", "home", MainWindowPage::Home);
   addItem("Search", "search", MainWindowPage::Search);
   addSeparator();
 

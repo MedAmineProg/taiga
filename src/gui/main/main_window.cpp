@@ -27,6 +27,7 @@
 #include "base/string.hpp"
 #include "gui/common/spinner_widget.hpp"
 #include "gui/history/history_widget.hpp"
+#include "gui/home/home_widget.hpp"
 #include "gui/library/library_widget.hpp"
 #include "gui/list/list_widget.hpp"
 #include "gui/main/about_dialog.hpp"
@@ -183,14 +184,7 @@ void MainWindow::initNavigation() {
   // Connects to m_navigationWidget's signals on construction, so it must come after.
   m_navigationController = new NavigationController(this);
 
-  const bool hasWatching = std::ranges::any_of(anime::db.entries(), [](const auto& entry) {
-    return entry.status == anime::list::Status::Watching;
-  });
-  if (hasWatching) {
-    navigateToListStatus(anime::list::Status::Watching);
-  } else {
-    navigateTo(MainWindowPage::List);
-  }
+  navigateTo(MainWindowPage::Home);
 
   ui_->splitter->insertWidget(0, m_navigationWidget);
 }
@@ -215,6 +209,8 @@ void MainWindow::initPage(MainWindowPage page) {
 
   switch (page) {
     case MainWindowPage::Home:
+      m_homeWidget = new HomeWidget(ui_->homePage);
+      init_page(ui_->homePage, m_homeWidget);
       break;
 
     case MainWindowPage::Search:

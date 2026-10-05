@@ -50,6 +50,8 @@ target_sources(taiga PRIVATE
 	media/anime_utils.cpp
 	media/anime_utils.hpp
 	media/anime.hpp
+	media/home_feed.cpp
+	media/home_feed.hpp
 
 	sync/anilist/anilist.cpp
 	sync/anilist/anilist.hpp
@@ -110,6 +112,8 @@ target_sources(taiga PRIVATE
 
 	track/episode.cpp
 	track/episode.hpp
+	track/library_index.cpp
+	track/library_index.hpp
 	track/media.cpp
 	track/media.hpp
 	track/media_player.cpp
@@ -141,6 +145,7 @@ target_sources(taiga PRIVATE
 )
 
 target_link_libraries(taiga PRIVATE
+	Qt6::Concurrent
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Network

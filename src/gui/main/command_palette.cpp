@@ -156,6 +156,7 @@ void CommandPalette::buildCommands() {
         .run = run,
     });
   };
+  addPage(tr("Home"), u"home"_s, [this] { m_mainWindow->navigateTo(MainWindowPage::Home); });
   addPage(tr("Search"), u"search"_s, [this] { m_mainWindow->navigateTo(MainWindowPage::Search); });
   for (const auto status : anime::list::kStatuses) {
     addPage(formatListStatus(status), u"list_alt"_s,

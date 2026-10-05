@@ -31,6 +31,9 @@ target_sources(taiga-gui PRIVATE
 	history/history_widget.cpp
 	history/history_widget.hpp
 
+	home/home_widget.cpp
+	home/home_widget.hpp
+
 	library/library_menu.cpp
 	library/library_menu.hpp
 	library/library_widget.cpp

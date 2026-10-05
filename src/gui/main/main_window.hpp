@@ -36,6 +36,7 @@ namespace gui {
 
 class CommandPalette;
 class HistoryWidget;
+class HomeWidget;
 class LibraryWidget;
 class ListWidget;
 class NavigationWidget;
@@ -94,6 +95,7 @@ private:
 
   CommandPalette* m_commandPalette = nullptr;
   HistoryWidget* m_historyWidget = nullptr;
+  HomeWidget* m_homeWidget = nullptr;
   LibraryWidget* m_libraryWidget = nullptr;
   ListWidget* m_listWidget = nullptr;
   NavigationController* m_navigationController = nullptr;
