@@ -24,6 +24,7 @@
 #include <QUrl>
 #include <algorithm>
 
+#include "base/qdate.hpp"
 #include "base/string.hpp"
 #include "gui/common/poster_widget.hpp"
 #include "gui/utils/format.hpp"
@@ -423,10 +424,10 @@ void MediaDialog::accept() {
     m_entry->score = usesRatingSpinBox() ? ratingSpinBoxValue(ui_->spinScore)
                                          : ui_->comboScore->currentData().toInt();
     m_entry->date_started = ui_->checkDateStarted->isChecked()
-                                ? FuzzyDate{ui_->dateStarted->date().toStdSysDays()}
+                                ? FuzzyDate{base::fromQDate(ui_->dateStarted->date())}
                                 : FuzzyDate{};
     m_entry->date_completed = ui_->checkDateCompleted->isChecked()
-                                  ? FuzzyDate{ui_->dateCompleted->date().toStdSysDays()}
+                                  ? FuzzyDate{base::fromQDate(ui_->dateCompleted->date())}
                                   : FuzzyDate{};
     m_entry->notes = ui_->plainTextEditNotes->toPlainText().toStdString();
 

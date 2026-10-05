@@ -24,6 +24,7 @@
 #include <optional>
 #include <ranges>
 
+#include "base/qdate.hpp"
 #include "media/anime.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_history.hpp"
@@ -49,7 +50,7 @@ Entry entryWithEpisodeWatched(const Details& item, const Entry* entry, const int
   auto updated = isInList(entry) ? *entry : Entry{.anime_id = item.id};
 
   const bool isFinalEpisode = item.episode_count > 0 && number == item.episode_count;
-  const FuzzyDate today{QDate::currentDate().toStdSysDays()};
+  const FuzzyDate today{base::fromQDate(QDate::currentDate())};
 
   updated.watched_episodes = number;
 
