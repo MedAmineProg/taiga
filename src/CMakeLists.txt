@@ -49,6 +49,8 @@ target_sources(taiga PRIVATE
 	media/anime_settings.hpp
 	media/anime_utils.cpp
 	media/anime_utils.hpp
+	media/airing_schedule.cpp
+	media/airing_schedule.hpp
 	media/anime.hpp
 	media/home_feed.cpp
 	media/home_feed.hpp

@@ -34,6 +34,7 @@ enum class Status;
 
 namespace gui {
 
+class CalendarWidget;
 class CommandPalette;
 class HistoryWidget;
 class HomeWidget;
@@ -94,6 +95,7 @@ private:
 
   Ui::MainWindow* ui_ = nullptr;
 
+  CalendarWidget* m_calendarWidget = nullptr;
   CommandPalette* m_commandPalette = nullptr;
   HistoryWidget* m_historyWidget = nullptr;
   HomeWidget* m_homeWidget = nullptr;
