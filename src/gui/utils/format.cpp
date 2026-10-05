@@ -122,6 +122,26 @@ QString formatAsRelativeTime(const qint64 time, QString placeholder) {
   return timeDiff < 0 ? u"in %1"_s.arg(str) : u"%1 ago"_s.arg(str);
 }
 
+QString formatCountdown(const qint64 seconds) {
+  constexpr qint64 kMinute = 60;
+  constexpr qint64 kHour = 60 * kMinute;
+  constexpr qint64 kDay = 24 * kHour;
+
+  const auto tr = [](const char* text) {
+    return QCoreApplication::translate("gui/utils/format", text);
+  };
+
+  if (seconds < kMinute) return tr("now");
+
+  const auto days = seconds / kDay;
+  const auto hours = (seconds % kDay) / kHour;
+  const auto minutes = (seconds % kHour) / kMinute;
+
+  if (days > 0) return tr("%1d %2h").arg(days).arg(hours);
+  if (hours > 0) return tr("%1h %2m").arg(hours).arg(minutes);
+  return tr("%1m").arg(minutes);
+}
+
 QString formatDuration(Duration duration) {
   const auto hours = static_cast<int>(duration.hours());
   duration = Duration(std::chrono::seconds{duration.seconds() % Duration::hours_t::period::num});
