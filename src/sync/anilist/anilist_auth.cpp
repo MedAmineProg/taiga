@@ -28,6 +28,11 @@
 namespace taiga::sync::anilist {
 
 void Service::authenticateUser() {
+  // The token may have been changed in the settings since the last request.
+  if (const auto token = taiga::accounts.anilistToken(); !token.empty()) {
+    api_.setBearerToken(QByteArray::fromStdString(token));
+  }
+
   const QJsonDocument data{QJsonObject{
       {"query", gql("Viewer")},
   }};
