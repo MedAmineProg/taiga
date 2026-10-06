@@ -30,6 +30,7 @@
 #include "media/anime_history.hpp"
 #include "media/anime_list.hpp"
 #include "media/list_undo.hpp"
+#include "sync/mirror.hpp"
 #include "sync/queue.hpp"
 
 namespace anime::list {
@@ -101,6 +102,7 @@ void save(Entry entry) {
   }
 
   taiga::sync::queue.push(entry.anime_id, dirty);
+  taiga::sync::mirror.push(entry.anime_id, dirty);
 
   if (!UndoStack::isSuppressed()) {
     static QElapsedTimer clock;
@@ -137,6 +139,7 @@ void undo(const int groupId) {
     if (current && current->id == kUnknownId) {
       // It was never sent to the service, so there's nothing to delete there.
       taiga::sync::queue.pop(change.anime_id);
+      taiga::sync::mirror.dropUnsent(change.anime_id);
       db.deleteEntry(change.anime_id);
     } else {
       remove(change.anime_id);
@@ -155,6 +158,7 @@ void remove(const int animeId) {
   db.updateEntry(updated);
 
   taiga::sync::queue.pushDelete(animeId);
+  taiga::sync::mirror.pushRemove(animeId);
 }
 
 }  // namespace anime::list

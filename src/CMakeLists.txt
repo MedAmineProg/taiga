@@ -97,6 +97,14 @@ target_sources(taiga PRIVATE
 	sync/myanimelist/myanimelist_ratings.hpp
 	sync/myanimelist/myanimelist_utils.cpp
 	sync/myanimelist/myanimelist_utils.hpp
+	sync/id_mapper.cpp
+	sync/id_mapper.hpp
+	sync/id_parsers.cpp
+	sync/id_parsers.hpp
+	sync/mirror.cpp
+	sync/mirror.hpp
+	sync/mirror_queue.cpp
+	sync/mirror_queue.hpp
 	sync/queue.cpp
 	sync/queue.hpp
 	sync/retry.hpp

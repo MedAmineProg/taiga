@@ -121,6 +121,11 @@ void Service::refreshAccessToken(std::function<void()> onSuccess) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Service::authenticateUser() {
+  // The token may have been changed in the settings since the last request.
+  if (const auto token = taiga::accounts.myanimelistAccessToken(); !token.empty()) {
+    api_.setBearerToken(QByteArray::fromStdString(token));
+  }
+
   const auto callback = [this](QRestReply& reply) {
     if (isError(reply)) {
       if (retryOnTokenExpiry(reply, [this] { authenticateUser(); })) return;

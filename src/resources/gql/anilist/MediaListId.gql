@@ -1,0 +1,5 @@
+query ($userName: String, $mediaId: Int) {
+  MediaList(userName: $userName, mediaId: $mediaId, type: ANIME) {
+    id
+  }
+}

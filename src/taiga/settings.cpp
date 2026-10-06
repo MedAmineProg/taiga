@@ -120,6 +120,12 @@ std::vector<std::string> Settings::disabledMediaPlayers() const {
          std::ranges::to<std::vector>();
 }
 
+std::vector<std::string> Settings::mirrorServices() const {
+  return value("sync.mirrors").toJsonArray().toVariantList() |
+         std::views::transform([](const QVariant& v) { return v.toString().toStdString(); }) |
+         std::ranges::to<std::vector>();
+}
+
 std::string Settings::service() const {
   return value("sync.service", taiga::sync::serviceSlug(taiga::sync::ServiceId::AniList))
       .toString()
@@ -220,6 +226,14 @@ void Settings::setAppStyle(const std::string& style) const {
 
 void Settings::setDetectionEnabled(const bool enabled) const {
   setValue("track.detection.enabled", enabled);
+}
+
+void Settings::setMirrorServices(std::vector<std::string> services) const {
+  const auto list =
+      services |
+      std::views::transform([](const std::string& s) { return QString::fromStdString(s); }) |
+      std::ranges::to<QList>();
+  setValue("sync.mirrors", QJsonArray::fromStringList(list));
 }
 
 void Settings::setDisabledMediaPlayers(std::vector<std::string> players) const {

@@ -17,7 +17,14 @@
  */
 #pragma once
 
+#include <QList>
+
 #include "gui/settings/settings_page.hpp"
+#include "sync/service.hpp"
+
+class QCheckBox;
+class QLabel;
+class QPushButton;
 
 namespace gui {
 
@@ -33,7 +40,21 @@ public:
   void apply() const override;
 
 private:
+  struct MirrorRow {
+    taiga::sync::ServiceId service;
+    QWidget* widget = nullptr;
+    QCheckBox* checkBox = nullptr;
+    QLabel* statusLabel = nullptr;
+    QPushButton* copyButton = nullptr;
+    QPushButton* retryButton = nullptr;
+  };
+
+  void createMirrorGroup();
+  void updateMirrorRows();
+  void copyList(const taiga::sync::ServiceId service);
   void updateVisibleGroup();
+
+  QList<MirrorRow> mirrorRows_;
 };
 
 }  // namespace gui

@@ -36,6 +36,7 @@
 #include "gui/utils/theme.hpp"
 #include "media/anime_db.hpp"
 #include "media/anime_history.hpp"
+#include "sync/mirror.hpp"
 #include "sync/queue.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/config.h"
@@ -91,6 +92,7 @@ int Application::run() {
   anime::db.init();
   anime::history.init();
   taiga::sync::queue.init();
+  taiga::sync::mirror.init();
   track::media::detection()->init();
   track::updateSession()->init();
   gui::imageProvider.init();

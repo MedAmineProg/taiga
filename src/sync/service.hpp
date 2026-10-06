@@ -23,6 +23,8 @@
 #include <QRestAccessManager>
 #include <QSet>
 #include <QString>
+#include <functional>
+#include <optional>
 
 #include "media/anime_list.hpp"
 #include "sync/search_params.hpp"
@@ -35,6 +37,16 @@ enum class ServiceId {
   Kitsu,
   AniList,
 };
+
+// Result of sending a list entry to a service. `remote` is the entry as returned by the service,
+// with the service's own IDs, when the response includes one.
+struct EntryResult {
+  bool success = false;
+  QString error;
+  std::optional<ListEntry> remote;
+};
+
+using EntryCallback = std::function<void(const EntryResult&)>;
 
 struct Rating {
   int value = 0;
@@ -77,6 +89,7 @@ QString serviceSlug(const ServiceId serviceId);
 QString tagMessage(const ServiceId serviceId, const QString& message);
 
 void authenticateUser();
+void authenticateUser(const ServiceId serviceId);
 void fetchAnime(const int id);
 void fetchListEntries();
 void search(const SearchParams& params);
@@ -87,7 +100,9 @@ void updateListEntry(const int id, const anime::list::Fields dirty);
 void deleteListEntry(const int id);
 
 bool isUserAuthenticated();
+bool isUserAuthenticated(const ServiceId serviceId);
 bool willAuthenticate();
+bool willAuthenticate(const ServiceId serviceId);
 
 QString animePageUrl(const int id);
 
