@@ -22,6 +22,16 @@ Taiga is portable: settings, the anime database and logs are kept in the `data` 
 
 On Linux and macOS, [build it from source](#building).
 
+### Logging in
+
+Open **Settings › Accounts**, choose your service, and select **Log in...**:
+
+- **AniList:** your browser opens AniList. Log in and select **Authorize**. Then copy the token shown on the page and paste it into Taiga.
+- **MyAnimeList:** your browser opens MyAnimeList. Log in and select **Allow**. Then copy the code shown on the page and paste it into Taiga.
+- **Kitsu:** enter your email or username and your password.
+
+Taiga loads your list as soon as you're logged in.
+
 ## Features
 
 ### Tracking and sync
