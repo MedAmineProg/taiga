@@ -19,9 +19,12 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDesktopServices>
 #include <QDialog>
+#include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -32,7 +35,12 @@
 
 #include "base/string.hpp"
 #include "media/anime_db.hpp"
+#include "sync/anilist/anilist.hpp"
+#include "sync/anilist/anilist_utils.hpp"
+#include "sync/kitsu/kitsu.hpp"
 #include "sync/mirror.hpp"
+#include "sync/myanimelist/myanimelist.hpp"
+#include "sync/myanimelist/myanimelist_utils.hpp"
 #include "sync/service.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/settings.hpp"
@@ -63,9 +71,233 @@ SettingsPageAccounts::SettingsPageAccounts(Ui::SettingsDialog* ui, QDialog* dial
   connect(ui_->serviceComboBox, &QComboBox::currentIndexChanged, this,
           [this]() { updateVisibleGroup(); });
 
+  createLoginRows();
   createMirrorGroup();
   connect(&taiga::sync::mirror, &taiga::sync::Mirror::changed, this,
           &SettingsPageAccounts::updateMirrorRows);
+}
+
+void SettingsPageAccounts::createLoginRows() {
+  using taiga::sync::ServiceId;
+
+  // Tokens come from logging in, so they aren't edited by hand. AniList and MyAnimeList also
+  // provide the username when logging in.
+  for (auto* widget : std::initializer_list<QWidget*>{
+           ui_->anilistUsernameLineEdit, ui_->anilistTokenLineEdit, ui_->kitsuAccessTokenLineEdit,
+           ui_->kitsuRefreshTokenLineEdit, ui_->myanimelistUsernameLineEdit,
+           ui_->myanimelistAccessTokenLineEdit, ui_->myanimelistRefreshTokenLineEdit}) {
+    if (auto* layout = qobject_cast<QFormLayout*>(widget->parentWidget()->layout())) {
+      layout->setRowVisible(widget, false);
+    }
+  }
+
+  const QList<std::pair<ServiceId, QFormLayout*>> groups{
+      {ServiceId::AniList, ui_->anilistFormLayout},
+      {ServiceId::Kitsu, ui_->kitsuFormLayout},
+      {ServiceId::MyAnimeList, ui_->myanimelistFormLayout},
+  };
+
+  for (const auto& [service, formLayout] : groups) {
+    LoginRow row{.service = service};
+
+    auto* widget = new QWidget(formLayout->parentWidget());
+    auto* layout = new QHBoxLayout(widget);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    row.statusLabel = new QLabel(widget);
+    row.logInButton = new QPushButton(widget);
+    row.logOutButton = new QPushButton(tr("Log out"), widget);
+
+    layout->addWidget(row.statusLabel, 1);
+    layout->addWidget(row.logInButton);
+    layout->addWidget(row.logOutButton);
+
+    if (service == ServiceId::Kitsu) {
+      formLayout->addRow(widget);  // below the email and password
+    } else {
+      formLayout->insertRow(0, tr("Account:"), widget);
+    }
+
+    connect(row.logInButton, &QPushButton::clicked, this, [this, service] { logIn(service); });
+    connect(row.logOutButton, &QPushButton::clicked, this, [this, service] { logOut(service); });
+
+    loginRows_.append(row);
+  }
+
+  const QList<std::pair<ServiceId, taiga::sync::Service*>> services{
+      {ServiceId::AniList, taiga::sync::anilist::Service::instance()},
+      {ServiceId::Kitsu, taiga::sync::kitsu::Service::instance()},
+      {ServiceId::MyAnimeList, taiga::sync::myanimelist::Service::instance()},
+  };
+  for (const auto& [service, instance] : services) {
+    connect(instance, &taiga::sync::Service::authenticationCompleted, this,
+            [this, service](bool authenticated) {
+              if (auto* row = loginRow(service)) {
+                row->pending = false;
+                row->failed = !authenticated;
+              }
+              updateLoginRows();
+            });
+  }
+
+  updateLoginRows();
+}
+
+SettingsPageAccounts::LoginRow* SettingsPageAccounts::loginRow(
+    const taiga::sync::ServiceId service) {
+  const auto it = std::ranges::find(loginRows_, service, &LoginRow::service);
+  return it != loginRows_.end() ? &*it : nullptr;
+}
+
+void SettingsPageAccounts::updateLoginRows() {
+  using taiga::sync::ServiceId;
+
+  const auto& accounts = taiga::accounts;
+
+  for (auto& row : loginRows_) {
+    bool hasToken = false;
+    std::string username;
+    switch (row.service) {
+      case ServiceId::AniList:
+        hasToken = !accounts.anilistToken().empty();
+        username = accounts.anilistUsername();
+        break;
+      case ServiceId::Kitsu:
+        hasToken = !accounts.kitsuAccessToken().empty();
+        username = accounts.kitsuUsername();
+        break;
+      case ServiceId::MyAnimeList:
+        hasToken = !accounts.myanimelistAccessToken().empty();
+        username = accounts.myanimelistUsername();
+        break;
+      case ServiceId::Unknown:
+        break;
+    }
+
+    QString status;
+    if (row.pending) {
+      status = tr("Logging in...");
+    } else if (hasToken && row.failed) {
+      status = tr("Couldn't log in. Please log in again.");
+    } else if (hasToken) {
+      status = username.empty() ? tr("Logged in.")
+                                : tr("Logged in as %1.").arg(QString::fromStdString(username));
+    } else if (row.failed) {
+      status = tr("Couldn't log in.");
+    } else {
+      status = tr("Not logged in.");
+    }
+
+    row.statusLabel->setText(status);
+    row.logInButton->setText(hasToken ? tr("Log in again...") : tr("Log in..."));
+    row.logInButton->setEnabled(!row.pending);
+    row.logOutButton->setVisible(hasToken && !row.pending);
+  }
+}
+
+void SettingsPageAccounts::logIn(const taiga::sync::ServiceId service) {
+  using taiga::sync::ServiceId;
+
+  auto* row = loginRow(service);
+  if (!row) return;
+
+  const auto name = taiga::sync::serviceName(service);
+
+  switch (service) {
+    case ServiceId::AniList: {
+      QDesktopServices::openUrl(
+          QUrl{QString::fromStdString(taiga::sync::anilist::requestTokenUrl())});
+      bool ok = false;
+      const auto token =
+          QInputDialog::getText(dialog_, tr("Log in to %1").arg(name),
+                                tr("AniList has opened in your browser. Log in, select "
+                                   "\"Authorize\", then copy the token shown on the page and "
+                                   "paste it here:"),
+                                QLineEdit::Normal, {}, &ok)
+              .trimmed();
+      if (!ok || token.isEmpty()) return;
+      taiga::accounts.setAnilistToken(token.toStdString());
+      taiga::accounts.setAnilistAuthenticated(false);
+      row->pending = true;
+      updateLoginRows();
+      taiga::sync::anilist::Service::instance()->authenticateUser();
+      break;
+    }
+
+    case ServiceId::MyAnimeList: {
+      std::string codeVerifier;
+      const auto url = taiga::sync::myanimelist::authorizationCodeUrl(codeVerifier);
+      QDesktopServices::openUrl(QUrl{QString::fromStdString(url)});
+      bool ok = false;
+      const auto code =
+          QInputDialog::getText(dialog_, tr("Log in to %1").arg(name),
+                                tr("MyAnimeList has opened in your browser. Log in, select "
+                                   "\"Allow\", then copy the code shown on the page and paste it "
+                                   "here:"),
+                                QLineEdit::Normal, {}, &ok)
+              .trimmed();
+      if (!ok || code.isEmpty()) return;
+      taiga::accounts.setMyanimelistAuthenticated(false);
+      row->pending = true;
+      updateLoginRows();
+      taiga::sync::myanimelist::Service::instance()->requestAccessToken(
+          code, QString::fromStdString(codeVerifier));
+      break;
+    }
+
+    case ServiceId::Kitsu: {
+      // Kitsu logs in with the email (or username) and password above.
+      const auto email = toStdString(ui_->kitsuEmailLineEdit);
+      const auto username = toStdString(ui_->kitsuUsernameLineEdit);
+      const auto password = ui_->kitsuPasswordLineEdit->text().toStdString();
+      if ((email.empty() && username.empty()) || password.empty()) {
+        QMessageBox::information(dialog_, tr("Log in to %1").arg(name),
+                                 tr("Enter your Kitsu email or username, and your password."));
+        return;
+      }
+      taiga::accounts.setKitsuEmail(email);
+      taiga::accounts.setKitsuUsername(username);
+      taiga::accounts.setKitsuPassword(password);
+      taiga::accounts.setKitsuAuthenticated(false);
+      row->pending = true;
+      updateLoginRows();
+      taiga::sync::kitsu::Service::instance()->authenticateUser();
+      break;
+    }
+
+    case ServiceId::Unknown:
+      break;
+  }
+}
+
+void SettingsPageAccounts::logOut(const taiga::sync::ServiceId service) {
+  using taiga::sync::ServiceId;
+
+  auto& accounts = taiga::accounts;
+
+  switch (service) {
+    case ServiceId::AniList:
+      accounts.setAnilistToken({});
+      accounts.setAnilistUsername({});
+      accounts.setAnilistAuthenticated(false);
+      break;
+    case ServiceId::Kitsu:
+      accounts.setKitsuAccessToken({});
+      accounts.setKitsuRefreshToken({});
+      accounts.setKitsuAuthenticated(false);
+      break;
+    case ServiceId::MyAnimeList:
+      accounts.setMyanimelistAccessToken({});
+      accounts.setMyanimelistRefreshToken({});
+      accounts.setMyanimelistUsername({});
+      accounts.setMyanimelistAuthenticated(false);
+      break;
+    case ServiceId::Unknown:
+      break;
+  }
+
+  if (auto* row = loginRow(service)) row->failed = false;
+  updateLoginRows();
 }
 
 void SettingsPageAccounts::createMirrorGroup() {
@@ -182,18 +414,11 @@ void SettingsPageAccounts::load() {
 
   const auto& accounts = taiga::accounts;
 
-  ui_->anilistUsernameLineEdit->setText(toQString(accounts.anilistUsername()));
-  ui_->anilistTokenLineEdit->setText(toQString(accounts.anilistToken()));
-
   ui_->kitsuEmailLineEdit->setText(toQString(accounts.kitsuEmail()));
   ui_->kitsuUsernameLineEdit->setText(toQString(accounts.kitsuUsername()));
   ui_->kitsuPasswordLineEdit->setText(toQString(accounts.kitsuPassword()));
-  ui_->kitsuAccessTokenLineEdit->setText(toQString(accounts.kitsuAccessToken()));
-  ui_->kitsuRefreshTokenLineEdit->setText(toQString(accounts.kitsuRefreshToken()));
 
-  ui_->myanimelistUsernameLineEdit->setText(toQString(accounts.myanimelistUsername()));
-  ui_->myanimelistAccessTokenLineEdit->setText(toQString(accounts.myanimelistAccessToken()));
-  ui_->myanimelistRefreshTokenLineEdit->setText(toQString(accounts.myanimelistRefreshToken()));
+  updateLoginRows();
 }
 
 void SettingsPageAccounts::apply() const {
@@ -214,18 +439,9 @@ void SettingsPageAccounts::apply() const {
 
   auto& accounts = taiga::accounts;
 
-  accounts.setAnilistUsername(toStdString(ui_->anilistUsernameLineEdit));
-  accounts.setAnilistToken(toStdString(ui_->anilistTokenLineEdit));
-
   accounts.setKitsuEmail(toStdString(ui_->kitsuEmailLineEdit));
   accounts.setKitsuUsername(toStdString(ui_->kitsuUsernameLineEdit));
   accounts.setKitsuPassword(ui_->kitsuPasswordLineEdit->text().toStdString());
-  accounts.setKitsuAccessToken(toStdString(ui_->kitsuAccessTokenLineEdit));
-  accounts.setKitsuRefreshToken(toStdString(ui_->kitsuRefreshTokenLineEdit));
-
-  accounts.setMyanimelistUsername(toStdString(ui_->myanimelistUsernameLineEdit));
-  accounts.setMyanimelistAccessToken(toStdString(ui_->myanimelistAccessTokenLineEdit));
-  accounts.setMyanimelistRefreshToken(toStdString(ui_->myanimelistRefreshTokenLineEdit));
 
   taiga::sync::mirror.process();
 }

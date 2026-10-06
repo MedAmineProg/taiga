@@ -49,11 +49,27 @@ private:
     QPushButton* retryButton = nullptr;
   };
 
+  struct LoginRow {
+    taiga::sync::ServiceId service;
+    QLabel* statusLabel = nullptr;
+    QPushButton* logInButton = nullptr;
+    QPushButton* logOutButton = nullptr;
+    bool pending = false;
+    bool failed = false;
+  };
+
+  void createLoginRows();
+  void updateLoginRows();
+  void logIn(const taiga::sync::ServiceId service);
+  void logOut(const taiga::sync::ServiceId service);
+  LoginRow* loginRow(const taiga::sync::ServiceId service);
+
   void createMirrorGroup();
   void updateMirrorRows();
   void copyList(const taiga::sync::ServiceId service);
   void updateVisibleGroup();
 
+  QList<LoginRow> loginRows_;
   QList<MirrorRow> mirrorRows_;
 };
 
