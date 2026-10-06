@@ -27,6 +27,7 @@
 #include "sync/anilist/anilist_utils.hpp"
 #include "sync/kitsu/kitsu.hpp"
 #include "sync/kitsu/kitsu_utils.hpp"
+#include "sync/mirror.hpp"
 #include "sync/myanimelist/myanimelist.hpp"
 #include "sync/myanimelist/myanimelist_utils.hpp"
 #include "sync/queue.hpp"
@@ -52,7 +53,7 @@ void Service::logError(const QString& message) {
 }
 
 void Service::onAuthenticationCompleted(bool authenticated) {
-  switch (currentServiceId()) {
+  switch (id_) {
     case ServiceId::MyAnimeList:
       taiga::accounts.setMyanimelistAuthenticated(authenticated);
       break;
@@ -64,8 +65,12 @@ void Service::onAuthenticationCompleted(bool authenticated) {
       break;
   }
 
-  if (authenticated) {
+  if (!authenticated) return;
+
+  if (id_ == currentServiceId()) {
     synchronize();
+  } else {
+    mirror.process();
   }
 }
 
@@ -114,7 +119,11 @@ QString tagMessage(const ServiceId serviceId, const QString& message) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void authenticateUser() {
-  switch (currentServiceId()) {
+  authenticateUser(currentServiceId());
+}
+
+void authenticateUser(const ServiceId serviceId) {
+  switch (serviceId) {
     case ServiceId::MyAnimeList:
       myanimelist::Service::instance()->authenticateUser();
       break;
@@ -236,7 +245,11 @@ void deleteListEntry(const int id) {
 }
 
 bool isUserAuthenticated() {
-  switch (currentServiceId()) {
+  return isUserAuthenticated(currentServiceId());
+}
+
+bool isUserAuthenticated(const ServiceId serviceId) {
+  switch (serviceId) {
     case ServiceId::MyAnimeList:
       return taiga::accounts.myanimelistAuthenticated();
     case ServiceId::Kitsu:
@@ -248,9 +261,13 @@ bool isUserAuthenticated() {
 }
 
 bool willAuthenticate() {
-  if (isUserAuthenticated()) return false;
+  return willAuthenticate(currentServiceId());
+}
 
-  switch (currentServiceId()) {
+bool willAuthenticate(const ServiceId serviceId) {
+  if (isUserAuthenticated(serviceId)) return false;
+
+  switch (serviceId) {
     case ServiceId::MyAnimeList:
       return !taiga::accounts.myanimelistAccessToken().empty();
     case ServiceId::Kitsu:

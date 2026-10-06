@@ -48,6 +48,10 @@ public:
   void deleteListEntry(const int id);
   void updateListEntry(const int id, const anime::list::Fields dirty);
 
+  // These take the entry to send (with MyAnimeList IDs) instead of reading it from the database.
+  void saveEntry(const ListEntry& entry, const anime::list::Fields dirty, EntryCallback done);
+  void deleteEntry(const int animeId, EntryCallback done);
+
 private:
   void refreshAccessToken(std::function<void()> onSuccess);
   bool retryOnTokenExpiry(QRestReply& reply, std::function<void()> retry);

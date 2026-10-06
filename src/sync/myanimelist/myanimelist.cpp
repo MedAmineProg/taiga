@@ -209,19 +209,9 @@ void Service::addListEntry(const int id, const anime::list::Fields dirty) {
 }
 
 void Service::deleteListEntry(const int id) {
-  const auto callback = [this, id](QRestReply& reply) {
-    if (isError(reply) && reply.httpStatus() != 404) {
-      if (retryOnTokenExpiry(reply, [this, id] { deleteListEntry(id); })) return;
-      handleError(*this, reply);
-      taiga::sync::queue.complete(false, "Failed to delete list entry.");
-      return;
-    }
-
-    taiga::sync::queue.complete(true);
-  };
-
-  manager_.deleteResource(api_.createRequest(u"/anime/%1/my_list_status"_s.arg(id)), this,
-                          callback);
+  deleteEntry(id, [](const EntryResult& result) {
+    taiga::sync::queue.complete(result.success, result.error);
+  });
 }
 
 void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
@@ -229,60 +219,90 @@ void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
 
   if (!listEntry) return;
 
+  saveEntry(*listEntry, dirty, [](const EntryResult& result) {
+    if (result.remote) {
+      taiga::sync::queue.complete(*result.remote);
+    } else {
+      taiga::sync::queue.complete(result.success, result.error);
+    }
+  });
+}
+
+void Service::saveEntry(const ListEntry& listEntry, const anime::list::Fields dirty,
+                        EntryCallback done) {
   using anime::list::Field;
 
   QUrlQuery body;
   if (dirty & Field::Episode) {
-    body.addQueryItem(u"num_watched_episodes"_s, QString::number(listEntry->watched_episodes));
+    body.addQueryItem(u"num_watched_episodes"_s, QString::number(listEntry.watched_episodes));
   }
   if (dirty & (Field::Status | Field::Rewatching)) {
-    body.addQueryItem(u"status"_s, fromListStatus(listEntry->status));
-    body.addQueryItem(u"is_rewatching"_s, listEntry->rewatching ? u"true"_s : u"false"_s);
+    body.addQueryItem(u"status"_s, fromListStatus(listEntry.status));
+    body.addQueryItem(u"is_rewatching"_s, listEntry.rewatching ? u"true"_s : u"false"_s);
   }
   if (dirty & Field::Score) {
-    body.addQueryItem(u"score"_s, QString::number(fromListScore(listEntry->score)));
+    body.addQueryItem(u"score"_s, QString::number(fromListScore(listEntry.score)));
   }
   if (dirty & Field::RewatchedTimes) {
-    body.addQueryItem(u"num_times_rewatched"_s, QString::number(listEntry->rewatched_times));
+    body.addQueryItem(u"num_times_rewatched"_s, QString::number(listEntry.rewatched_times));
   }
   if (dirty & Field::DateStarted) {
-    body.addQueryItem(u"start_date"_s, QString::fromStdString(listEntry->date_started.to_string()));
+    body.addQueryItem(u"start_date"_s, QString::fromStdString(listEntry.date_started.to_string()));
   }
   if (dirty & Field::DateCompleted) {
     body.addQueryItem(u"finish_date"_s,
-                      QString::fromStdString(listEntry->date_completed.to_string()));
+                      QString::fromStdString(listEntry.date_completed.to_string()));
   }
   if (dirty & Field::Notes) {
-    body.addQueryItem(u"comments"_s, QString::fromStdString(listEntry->notes));
+    body.addQueryItem(u"comments"_s, QString::fromStdString(listEntry.notes));
   }
+
+  const int id = listEntry.anime_id;
 
   auto request = api_.createRequest(u"/anime/%1/my_list_status"_s.arg(id));
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
-  const auto callback = [this, id, dirty](QRestReply& reply) {
+  const auto callback = [this, listEntry, dirty, done](QRestReply& reply) {
     if (isError(reply)) {
-      if (retryOnTokenExpiry(reply, [this, id, dirty] { updateListEntry(id, dirty); })) return;
+      if (retryOnTokenExpiry(
+              reply, [this, listEntry, dirty, done] { saveEntry(listEntry, dirty, done); })) {
+        return;
+      }
       handleError(*this, reply,
                   reply.httpStatus() == 404 ? u"Anime list entry does not exist."_s : QString{});
-      taiga::sync::queue.complete(false, "Failed to update list entry.");
+      done({.error = u"Failed to update list entry."_s});
       return;
     }
 
     const auto json = reply.readJson();
     if (!json) {
       handleError(*this, reply, "Could not parse list entry.");
-      taiga::sync::queue.complete(false, "Could not parse list entry.");
+      done({.error = u"Could not parse list entry."_s});
       return;
     }
 
-    if (const auto entry = parseListEntry(json->object(), id)) {
-      taiga::sync::queue.complete(*entry);
-    } else {
-      taiga::sync::queue.complete(true);
-    }
+    done({.success = true, .remote = parseListEntry(json->object(), listEntry.anime_id)});
   };
 
   manager_.patch(request, formUrlEncode(body), this, callback);
+}
+
+void Service::deleteEntry(const int animeId, EntryCallback done) {
+  const auto callback = [this, animeId, done](QRestReply& reply) {
+    if (isError(reply) && reply.httpStatus() != 404) {
+      if (retryOnTokenExpiry(reply, [this, animeId, done] { deleteEntry(animeId, done); })) {
+        return;
+      }
+      handleError(*this, reply);
+      done({.error = u"Failed to delete list entry."_s});
+      return;
+    }
+
+    done({.success = true});
+  };
+
+  manager_.deleteResource(api_.createRequest(u"/anime/%1/my_list_status"_s.arg(animeId)), this,
+                          callback);
 }
 
 }  // namespace taiga::sync::myanimelist

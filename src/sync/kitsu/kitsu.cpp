@@ -29,6 +29,7 @@
 
 #include "base/string.hpp"
 #include "media/anime_db.hpp"
+#include "sync/id_parsers.hpp"
 #include "sync/kitsu/kitsu_error.hpp"
 #include "sync/kitsu/kitsu_parsers.hpp"
 #include "sync/kitsu/kitsu_utils.hpp"
@@ -243,14 +244,49 @@ void Service::addListEntry(const int id, const anime::list::Fields dirty) {
   const auto listEntry = anime::db.entry(id);
   if (!listEntry) return;
 
+  createEntry(*listEntry, dirty, completeQueueItem);
+}
+
+void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
+  const auto listEntry = anime::db.entry(id);
+  if (!listEntry) return;
+
+  patchEntry(*listEntry, dirty, completeQueueItem);
+}
+
+void Service::deleteListEntry(const int id) {
+  const auto listEntry = anime::db.entry(id);
+  if (!listEntry) return;
+
+  deleteEntry(listEntry->id, completeQueueItem);
+}
+
+void Service::completeQueueItem(const EntryResult& result) {
+  if (result.remote) {
+    taiga::sync::queue.complete(*result.remote);
+  } else {
+    taiga::sync::queue.complete(result.success, result.error);
+  }
+}
+
+void Service::createEntry(const ListEntry& listEntry, const anime::list::Fields dirty,
+                          EntryCallback done) {
+  // New library entries belong to a user, whose ID must be resolved first.
+  if (taiga::accounts.kitsuUserId().empty()) {
+    resolveUser([this, listEntry, dirty, done] { createEntry(listEntry, dirty, done); });
+    return;
+  }
+
   const QUrlQuery query{{"fields[libraryEntries]", libraryEntryFields()}};
   auto request = api_.createRequest(u"/library-entries"_s, query);
   request.setHeader(QNetworkRequest::ContentTypeHeader, kJsonApiMediaType);
 
-  const auto body = buildLibraryEntryObject(*listEntry, dirty,
+  const auto body = buildLibraryEntryObject(listEntry, dirty,
                                             QString::fromStdString(taiga::accounts.kitsuUserId()));
 
-  const auto callback = [this, id, dirty](QRestReply& reply) {
+  const int id = listEntry.anime_id;
+
+  const auto callback = [this, id, listEntry, dirty, done](QRestReply& reply) {
     const auto json = reply.readJson();
 
     // Kitsu returns 422 if the anime is already in the user's list. Treat this as a
@@ -261,78 +297,141 @@ void Service::addListEntry(const int id, const anime::list::Fields dirty) {
         return value["detail"].toString().contains(u"has already been taken"_s);
       });
       if (duplicate) {
-        taiga::sync::queue.complete(true);
+        done({.success = true});
         return;
       }
     }
 
     if (isError(reply)) {
-      if (retryOnTokenExpiry(reply, [this, id, dirty] { addListEntry(id, dirty); })) return;
+      if (retryOnTokenExpiry(
+              reply, [this, listEntry, dirty, done] { createEntry(listEntry, dirty, done); })) {
+        return;
+      }
       handleError(*this, reply, json);
-      taiga::sync::queue.complete(false, "Failed to add list entry.");
+      done({.error = u"Failed to add list entry."_s});
       return;
     }
 
-    if (const auto entry =
-            json ? parseListEntry(json->object()["data"].toObject(), id) : std::nullopt) {
-      taiga::sync::queue.complete(*entry);
-    } else {
-      taiga::sync::queue.complete(true);
-    }
+    done({
+        .success = true,
+        .remote = json ? parseListEntry(json->object()["data"].toObject(), id) : std::nullopt,
+    });
   };
 
   manager_.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact), this, callback);
 }
 
-void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
-  const auto listEntry = anime::db.entry(id);
-  if (!listEntry) return;
-
+void Service::patchEntry(const ListEntry& listEntry, const anime::list::Fields dirty,
+                         EntryCallback done) {
   const QUrlQuery query{{"fields[libraryEntries]", libraryEntryFields()}};
-  auto request = api_.createRequest(u"/library-entries/%1"_s.arg(listEntry->id), query);
+  auto request = api_.createRequest(u"/library-entries/%1"_s.arg(listEntry.id), query);
   request.setHeader(QNetworkRequest::ContentTypeHeader, kJsonApiMediaType);
 
-  const auto body = buildLibraryEntryObject(*listEntry, dirty,
+  const auto body = buildLibraryEntryObject(listEntry, dirty,
                                             QString::fromStdString(taiga::accounts.kitsuUserId()));
 
-  const auto callback = [this, id, dirty](QRestReply& reply) {
+  const int id = listEntry.anime_id;
+
+  const auto callback = [this, id, listEntry, dirty, done](QRestReply& reply) {
     if (isError(reply)) {
-      if (retryOnTokenExpiry(reply, [this, id, dirty] { updateListEntry(id, dirty); })) return;
+      if (retryOnTokenExpiry(
+              reply, [this, listEntry, dirty, done] { patchEntry(listEntry, dirty, done); })) {
+        return;
+      }
       handleError(*this, reply,
                   reply.httpStatus() == 404 ? u"Anime list entry does not exist."_s : QString{});
-      taiga::sync::queue.complete(false, "Failed to update list entry.");
+      done({.error = u"Failed to update list entry."_s});
       return;
     }
 
     const auto json = reply.readJson();
-    if (const auto entry =
-            json ? parseListEntry(json->object()["data"].toObject(), id) : std::nullopt) {
-      taiga::sync::queue.complete(*entry);
-    } else {
-      taiga::sync::queue.complete(true);
-    }
+    done({
+        .success = true,
+        .remote = json ? parseListEntry(json->object()["data"].toObject(), id) : std::nullopt,
+    });
   };
 
   manager_.patch(request, QJsonDocument(body).toJson(QJsonDocument::Compact), this, callback);
 }
 
-void Service::deleteListEntry(const int id) {
-  const auto listEntry = anime::db.entry(id);
-  if (!listEntry) return;
-
-  const auto callback = [this, id](QRestReply& reply) {
+void Service::deleteEntry(const int64_t entryId, EntryCallback done) {
+  const auto callback = [this, entryId, done](QRestReply& reply) {
     if (isError(reply) && reply.httpStatus() != 404) {
-      if (retryOnTokenExpiry(reply, [this, id] { deleteListEntry(id); })) return;
+      if (retryOnTokenExpiry(reply, [this, entryId, done] { deleteEntry(entryId, done); })) return;
       handleError(*this, reply);
-      taiga::sync::queue.complete(false, "Failed to delete list entry.");
+      done({.error = u"Failed to delete list entry."_s});
       return;
     }
 
-    taiga::sync::queue.complete(true);
+    done({.success = true});
   };
 
-  manager_.deleteResource(api_.createRequest(u"/library-entries/%1"_s.arg(listEntry->id)), this,
+  manager_.deleteResource(api_.createRequest(u"/library-entries/%1"_s.arg(entryId)), this,
                           callback);
+}
+
+void Service::findEntryId(const int animeId, std::function<void(bool, int64_t)> done) {
+  if (taiga::accounts.kitsuUserId().empty()) {
+    resolveUser([this, animeId, done] { findEntryId(animeId, done); });
+    return;
+  }
+
+  const QUrlQuery query{{
+      {"filter[user_id]", QString::fromStdString(taiga::accounts.kitsuUserId())},
+      {"filter[anime_id]", QString::number(animeId)},
+      {"fields[libraryEntries]", "id"},
+  }};
+
+  const auto callback = [this, animeId, done](QRestReply& reply) {
+    if (isError(reply)) {
+      if (retryOnTokenExpiry(reply, [this, animeId, done] { findEntryId(animeId, done); })) return;
+      handleError(*this, reply);
+      done(false, anime::list::kUnknownId);
+      return;
+    }
+    const auto json = reply.readJson();
+    done(true, json ? parseFirstResourceId(json->object()) : anime::list::kUnknownId);
+  };
+
+  manager_.get(api_.createRequest(u"/library-entries"_s, query), this, callback);
+}
+
+void Service::findMalId(const int animeId, std::function<void(bool, int)> done) {
+  const auto callback = [this, done](QRestReply& reply) {
+    if (reply.httpStatus() == 404) {
+      done(true, 0);
+      return;
+    }
+    if (isError(reply)) {
+      handleError(*this, reply);
+      done(false, 0);
+      return;
+    }
+    const auto json = reply.readJson();
+    done(true, json ? parseMalIdFromMappings(json->object()) : 0);
+  };
+
+  manager_.get(api_.createRequest(u"/anime/%1/mappings"_s.arg(animeId)), this, callback);
+}
+
+void Service::findIdFromMal(const int malId, std::function<void(bool, int)> done) {
+  const QUrlQuery query{{
+      {"filter[externalSite]", "myanimelist/anime"},
+      {"filter[externalId]", QString::number(malId)},
+      {"include", "item"},
+  }};
+
+  const auto callback = [this, done](QRestReply& reply) {
+    if (isError(reply)) {
+      handleError(*this, reply);
+      done(false, 0);
+      return;
+    }
+    const auto json = reply.readJson();
+    done(true, json ? parseAnimeIdFromMappings(json->object()) : 0);
+  };
+
+  manager_.get(api_.createRequest(u"/mappings"_s, query), this, callback);
 }
 
 }  // namespace taiga::sync::kitsu

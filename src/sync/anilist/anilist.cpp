@@ -31,6 +31,7 @@
 #include "sync/anilist/anilist_error.hpp"
 #include "sync/anilist/anilist_parsers.hpp"
 #include "sync/anilist/anilist_utils.hpp"
+#include "sync/id_parsers.hpp"
 #include "sync/queue.hpp"
 #include "taiga/accounts.hpp"
 
@@ -206,22 +207,9 @@ void Service::deleteListEntry(const int id) {
 
   if (!listEntry) return;
 
-  const QJsonDocument data{{
-      {"query", gql("DeleteMediaListEntry")},
-      {"variables", QJsonObject{{"id", static_cast<qint64>(listEntry->id)}}},
-  }};
-
-  const auto callback = [this](QRestReply& reply) {
-    if (isError(reply) && reply.httpStatus() != 404) {
-      handleError(*this, reply);
-      taiga::sync::queue.complete(false, "Failed to delete list entry.");
-      return;
-    }
-
-    taiga::sync::queue.complete(true);
-  };
-
-  manager_.post(api_.createRequest(), data, this, callback);
+  deleteEntry(listEntry->id, [](const EntryResult& result) {
+    taiga::sync::queue.complete(result.success, result.error);
+  });
 }
 
 void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
@@ -229,27 +217,37 @@ void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
 
   if (!listEntry) return;
 
+  saveEntry(*listEntry, dirty, [](const EntryResult& result) {
+    if (result.remote) {
+      taiga::sync::queue.complete(*result.remote);
+    } else {
+      taiga::sync::queue.complete(result.success, result.error);
+    }
+  });
+}
+
+void Service::saveEntry(const ListEntry& listEntry, const anime::list::Fields dirty,
+                        EntryCallback done) {
   QJsonObject variables{
-      {"mediaId", listEntry->anime_id},
+      {"mediaId", listEntry.anime_id},
   };
 
-  if (listEntry->id != anime::list::kUnknownId) {
-    variables["id"] = static_cast<qint64>(listEntry->id);
+  if (listEntry.id != anime::list::kUnknownId) {
+    variables["id"] = static_cast<qint64>(listEntry.id);
   }
 
   using anime::list::Field;
 
   if (dirty & (Field::Status | Field::Rewatching)) {
-    variables["status"] =
-        listEntry->rewatching ? u"REPEATING"_s : fromListStatus(listEntry->status);
+    variables["status"] = listEntry.rewatching ? u"REPEATING"_s : fromListStatus(listEntry.status);
   }
-  if (dirty & Field::Score) variables["scoreRaw"] = listEntry->score;
-  if (dirty & Field::Episode) variables["progress"] = listEntry->watched_episodes;
-  if (dirty & Field::RewatchedTimes) variables["repeat"] = listEntry->rewatched_times;
-  if (dirty & Field::Notes) variables["notes"] = QString::fromStdString(listEntry->notes);
-  if (dirty & Field::DateStarted) variables["startedAt"] = fromFuzzyDate(listEntry->date_started);
+  if (dirty & Field::Score) variables["scoreRaw"] = listEntry.score;
+  if (dirty & Field::Episode) variables["progress"] = listEntry.watched_episodes;
+  if (dirty & Field::RewatchedTimes) variables["repeat"] = listEntry.rewatched_times;
+  if (dirty & Field::Notes) variables["notes"] = QString::fromStdString(listEntry.notes);
+  if (dirty & Field::DateStarted) variables["startedAt"] = fromFuzzyDate(listEntry.date_started);
   if (dirty & Field::DateCompleted) {
-    variables["completedAt"] = fromFuzzyDate(listEntry->date_completed);
+    variables["completedAt"] = fromFuzzyDate(listEntry.date_completed);
   }
 
   const QJsonDocument data{{
@@ -257,10 +255,10 @@ void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
       {"variables", variables},
   }};
 
-  const auto callback = [this](QRestReply& reply) {
+  const auto callback = [this, done](QRestReply& reply) {
     if (isError(reply)) {
       handleError(*this, reply);
-      taiga::sync::queue.complete(false, "Failed to update list entry.");
+      done({.error = u"Failed to update list entry."_s});
       return;
     }
 
@@ -270,18 +268,87 @@ void Service::updateListEntry(const int id, const anime::list::Fields dirty) {
 
     if (!entry) {
       handleError(*this, reply, "Could not parse list entry.");
-      taiga::sync::queue.complete(false, "Could not parse list entry.");
+      done({.error = u"Could not parse list entry."_s});
       return;
     }
 
-    if (const auto item = parseMedia((*entry)["media"])) {
-      anime::db.updateItem(*item);
+    // Only the main service's anime are in the database.
+    if (id() == currentServiceId()) {
+      if (const auto item = parseMedia((*entry)["media"])) {
+        anime::db.updateItem(*item);
+      }
     }
-    if (const auto listEntry = parseListEntry(*entry)) {
-      taiga::sync::queue.complete(*listEntry);
-    } else {
-      taiga::sync::queue.complete(true);
+    done({.success = true, .remote = parseListEntry(*entry)});
+  };
+
+  manager_.post(api_.createRequest(), data, this, callback);
+}
+
+void Service::deleteEntry(const int64_t entryId, EntryCallback done) {
+  const QJsonDocument data{{
+      {"query", gql("DeleteMediaListEntry")},
+      {"variables", QJsonObject{{"id", static_cast<qint64>(entryId)}}},
+  }};
+
+  const auto callback = [this, done](QRestReply& reply) {
+    if (isError(reply) && reply.httpStatus() != 404) {
+      handleError(*this, reply);
+      done({.error = u"Failed to delete list entry."_s});
+      return;
     }
+
+    done({.success = true});
+  };
+
+  manager_.post(api_.createRequest(), data, this, callback);
+}
+
+void Service::findEntryId(const int mediaId, std::function<void(bool, int64_t)> done) {
+  const QJsonDocument data{{
+      {"query", gql("MediaListId")},
+      {"variables",
+       QJsonObject{
+           {"userName", QString::fromStdString(taiga::accounts.anilistUsername())},
+           {"mediaId", mediaId},
+       }},
+  }};
+
+  const auto callback = [this, done](QRestReply& reply) {
+    // AniList answers 404 when the anime isn't in the list.
+    if (reply.httpStatus() == 404) {
+      done(true, anime::list::kUnknownId);
+      return;
+    }
+    if (isError(reply)) {
+      handleError(*this, reply);
+      done(false, anime::list::kUnknownId);
+      return;
+    }
+    const auto json = reply.readJson();
+    done(true, json ? parseMediaListId(json->object()) : anime::list::kUnknownId);
+  };
+
+  manager_.post(api_.createRequest(), data, this, callback);
+}
+
+void Service::mapIds(const QList<int>& ids, const bool fromMal,
+                     std::function<void(bool, QHash<int, int>)> done) {
+  QJsonArray idArray;
+  for (const auto id : ids) idArray.append(id);
+
+  const QJsonDocument data{{
+      {"query", gql(fromMal ? u"MediaIdsByMal"_s : u"MediaIds"_s)},
+      {"variables", QJsonObject{{"ids", idArray}}},
+  }};
+
+  const auto callback = [this, fromMal, done](QRestReply& reply) {
+    if (isError(reply)) {
+      handleError(*this, reply);
+      done(false, {});
+      return;
+    }
+    const auto json = reply.readJson();
+    done(true, json ? parseIdMappings(json->object(), fromMal) : QHash<int, int>{});
   };
 
   manager_.post(api_.createRequest(), data, this, callback);

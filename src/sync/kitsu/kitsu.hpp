@@ -63,7 +63,19 @@ public:
   void updateListEntry(const int id, const anime::list::Fields dirty);
   void deleteListEntry(const int id);
 
+  // These take the entry to send (with Kitsu IDs) instead of reading it from the database.
+  void createEntry(const ListEntry& entry, const anime::list::Fields dirty, EntryCallback done);
+  void patchEntry(const ListEntry& entry, const anime::list::Fields dirty, EntryCallback done);
+  void deleteEntry(const int64_t entryId, EntryCallback done);
+  void findEntryId(const int animeId, std::function<void(bool success, int64_t entryId)> done);
+
+  // Maps between Kitsu and MyAnimeList anime IDs. 0 means there's no match.
+  void findMalId(const int animeId, std::function<void(bool success, int malId)> done);
+  void findIdFromMal(const int malId, std::function<void(bool success, int animeId)> done);
+
 private:
+  static void completeQueueItem(const EntryResult& result);
+
   void resolveUser(std::function<void()> onSuccess = nullptr);
   void refreshAccessToken(std::function<void()> onSuccess);
   bool retryOnTokenExpiry(QRestReply& reply, std::function<void()> retry);

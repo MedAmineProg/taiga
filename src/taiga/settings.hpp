@@ -56,6 +56,7 @@ public:
   bool discordShowUsername() const;
   std::vector<std::string> disabledMediaPlayers() const;
   std::string service() const;
+  std::vector<std::string> mirrorServices() const;
   std::vector<std::string> libraryFolders() const;
   bool listUpdateNotificationsEnabled() const;
   std::chrono::milliseconds mediaDetectionInterval() const;
@@ -79,6 +80,7 @@ public:
   void setDisabledMediaPlayers(std::vector<std::string> players) const;
   void setService(const std::string& service) const;
   void setLibraryFolders(std::vector<std::string> folders) const;
+  void setMirrorServices(std::vector<std::string> services) const;
   void setMediaDetectionInterval(const std::chrono::milliseconds interval) const;
   void setProxyType(const QNetworkProxy::ProxyType type) const;
   void setProxyHost(const std::string& host) const;

@@ -343,9 +343,15 @@ void MainWindow::initStatusbar() {
               const auto slug = taiga::sync::serviceSlug(sender_service->id()).toStdString();
               const auto username = taiga::accounts.serviceUsername(slug);
 
+              // Services that changes are mirrored to are named, as they aren't the main one.
+              auto text = tr("Logged in as %1.").arg(username);
+              if (sender_service->id() != taiga::sync::currentServiceId()) {
+                text = taiga::sync::tagMessage(sender_service->id(), text);
+              }
+
               m_statusBarController->showMessage({
                   .source = StatusBarController::Source::Sync,
-                  .text = tr("Logged in as %1.").arg(username),
+                  .text = text,
                   .spin = false,
               });
             });
