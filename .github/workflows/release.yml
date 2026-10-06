@@ -1,0 +1,113 @@
+name: Release
+
+# Builds the Windows package and publishes it as a GitHub pre-release.
+# Run it from the Actions tab (with a version such as 2.0.0-alpha.1), or push a tag like
+# v2.0.0-alpha.1. Pull requests that change this workflow build the package without publishing it.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version, without the leading "v" (e.g. 2.0.0-alpha.1)
+        required: true
+        default: 2.0.0-alpha.1
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows package
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            version="pr${{ github.event.number }}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "PACKAGE=Taiga-$version-windows-x64" >> "$GITHUB_ENV"
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.*'
+          arch: win64_msvc2022_64
+          cache: true
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DTAIGA_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      # Taiga runs in portable mode: settings and the database go to a "data" folder next to
+      # Taiga.exe, so the package only needs the executable and the Qt libraries it uses.
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory $env:PACKAGE | Out-Null
+          Copy-Item bin/Taiga.exe $env:PACKAGE/
+          windeployqt --release --no-translations --compiler-runtime --no-system-d3d-compiler --no-opengl-sw "$env:PACKAGE/Taiga.exe"
+          Copy-Item LICENSE "$env:PACKAGE/LICENSE.txt"
+          Copy-Item README.md "$env:PACKAGE/README.md"
+          Compress-Archive -Path $env:PACKAGE -DestinationPath "$env:PACKAGE.zip"
+
+      # Start the packaged app from a clean copy, to catch missing libraries before publishing.
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          Expand-Archive "$env:PACKAGE.zip" -DestinationPath smoke
+          $process = Start-Process -FilePath "smoke/$env:PACKAGE/Taiga.exe" -PassThru
+          Start-Sleep -Seconds 15
+          if ($process.HasExited) {
+            Write-Error "Taiga exited early with code $($process.ExitCode)."
+            exit 1
+          }
+          Stop-Process -Id $process.Id -Force
+          if (-not (Test-Path "smoke/$env:PACKAGE/data/media.sqlite")) {
+            Write-Error "Taiga didn't create its data folder."
+            exit 1
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE }}
+          path: ${{ env.PACKAGE }}.zip
+
+      - uses: softprops/action-gh-release@v2
+        if: github.event_name != 'pull_request'
+        with:
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Taiga ${{ env.VERSION }}
+          prerelease: true
+          files: ${{ env.PACKAGE }}.zip
+          body: |
+            A test build of Taiga 2.0 for Windows (64-bit). See the README for what's new.
+
+            **Install:** download `${{ env.PACKAGE }}.zip`, extract it anywhere and run `Taiga.exe`.
+            It's portable: settings, the anime database and logs are kept in the `data` folder next
+            to `Taiga.exe`, so deleting the folder removes everything. Windows SmartScreen may warn
+            that the app is unrecognized, since it isn't signed; choose "More info" → "Run anyway".
+
+            This is an alpha. Back up your list on your service before trying it.
