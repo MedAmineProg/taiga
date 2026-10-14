@@ -18,15 +18,19 @@
 
 #include "media.hpp"
 
+#include <QFileInfo>
+#include <QStringList>
 #include <algorithm>
 #include <optional>
 #include <string>
 
+#include "base/string.hpp"
 #include "media/anime.hpp"
 #include "media/anime_db.hpp"
 #include "taiga/settings.hpp"
 #include "track/episode.hpp"
 #include "track/media_player.hpp"
+#include "track/media_select.hpp"
 #include "track/player_media.hpp"
 #include "track/recognition.hpp"
 
@@ -76,6 +80,11 @@ MediaFields extractMediaFields(const anisthesia::Media& media) {
   }
 
   return fields;
+}
+
+[[maybe_unused]] bool isVideoPath(const std::string& path) {
+  const QFileInfo fileInfo{QString::fromStdString(path)};
+  return track::recognition::isVideoFile(track::recognition::parseFileInfo(fileInfo));
 }
 
 std::optional<Episode> resolveEpisode(const MediaFields& fields) {
@@ -157,7 +166,7 @@ void Detection::poll() {
   const auto players = getEnabledPlayers(players_);
 
   static const auto media_proc = [](const anisthesia::MediaInfo&) {
-    return true;  // Accept all media
+    return true;  // Accept all media, and choose below
   };
 
   std::vector<anisthesia::win::Result> results;
@@ -166,14 +175,40 @@ void Detection::poll() {
     return;
   }
 
-  const auto resultIt = std::ranges::find_if(results, [this](const anisthesia::win::Result& r) {
-    return r.window.handle == currentWindowHandle_;
-  });
-  const auto& result = resultIt != results.end() ? *resultIt : results.front();
+  std::vector<WindowMedia> candidates;
+  for (const auto& result : results) {
+    candidates.push_back({
+        .player = result.player.name,
+        .webBrowser = result.player.type == anisthesia::PlayerType::WebBrowser,
+        .window = result.window.handle,
+        .information = flattenMedia(result).information,
+    });
+  }
 
+  const auto selected = selectMedia(candidates, currentWindowHandle_,
+                                    taiga::settings.streamingMediaEnabled(), isVideoPath);
+  if (!selected) {
+    logUnselected(candidates);
+    reset();
+    return;
+  }
+  lastUnselectedLog_.clear();
+
+  const auto& result = results.at(selected->index);
   currentPlayer_ = result.player;
-  currentMedia_ = flattenMedia(result);
   currentWindowHandle_ = result.window.handle;
+
+  anisthesia::Media media;
+  if (!selected->file.empty()) {
+    media.information.push_back({anisthesia::MediaInfoType::File, selected->file});
+  }
+  if (!selected->title.empty()) {
+    media.information.push_back({anisthesia::MediaInfoType::Title, selected->title});
+  }
+  if (!selected->url.empty()) {
+    media.information.push_back({anisthesia::MediaInfoType::Url, selected->url});
+  }
+  currentMedia_ = media;
 
   auto episode = resolveEpisode(extractMediaFields(*currentMedia_));
   if (!episode) {
@@ -256,6 +291,22 @@ void Detection::reset() {
     currentEpisode_.reset();
     emit currentEpisodeChanged(std::nullopt);
   }
+}
+
+void Detection::logUnselected(const std::vector<WindowMedia>& candidates) {
+  // Running players without a recognizable video are logged once, to help with detection issues.
+  QStringList parts;
+  for (const auto& candidate : candidates) {
+    const auto files = std::ranges::count(candidate.information, anisthesia::MediaInfoType::File,
+                                          &anisthesia::MediaInfo::type);
+    parts.append(u"%1 (%2 open files%3)"_s.arg(QString::fromStdString(candidate.player))
+                     .arg(files)
+                     .arg(candidate.webBrowser ? u", web browser"_s : QString{}));
+  }
+  const auto message = parts.join(u", "_s);
+  if (message == lastUnselectedLog_) return;
+  lastUnselectedLog_ = message;
+  qInfo().noquote() << "No video found in running media players:" << message;
 }
 
 bool Detection::hasEpisodeChanged(const Episode& episode) const {

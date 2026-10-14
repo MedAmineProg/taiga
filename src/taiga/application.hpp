@@ -46,6 +46,9 @@ public:
 
   gui::MainWindow* mainWindow() const;
 
+  // Starts a new instance of Taiga and quits this one, e.g. to switch to another service.
+  void restart();
+
 protected:
   bool notify(QObject* receiver, QEvent* event) override;
 
@@ -60,6 +63,7 @@ private:
   struct Options {
     bool debug = false;
     bool verbose = false;
+    bool restart = false;
   } options_;
 
   QCommandLineParser parser_;

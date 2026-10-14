@@ -72,8 +72,7 @@ void MediaMenu::popup() {
   addSeparator();
   addLibraryItems();
   addSeparator();
-  addTorrentsItems();
-  addSeparator();
+  // addTorrentsItems();  // the Torrents page isn't built yet
   addMetaItems();
 
   QMenu::popup(QCursor::pos());

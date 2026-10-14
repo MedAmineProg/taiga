@@ -26,3 +26,5 @@ target_link_libraries(test_discord PRIVATE Qt6::Network)
 taiga_add_test(test_player_media ${CMAKE_SOURCE_DIR}/src/track/player_media_utils.cpp)
 taiga_add_test(test_mirror ${CMAKE_SOURCE_DIR}/src/sync/mirror_queue.cpp
 	${CMAKE_SOURCE_DIR}/src/sync/id_parsers.cpp)
+taiga_add_test(test_media_select ${CMAKE_SOURCE_DIR}/src/track/media_select.cpp)
+target_include_directories(test_media_select PRIVATE ${CMAKE_SOURCE_DIR}/deps/anisthesia/include)

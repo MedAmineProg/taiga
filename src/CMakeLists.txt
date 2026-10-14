@@ -139,6 +139,8 @@ target_sources(taiga PRIVATE
 	track/library_index.hpp
 	track/media.cpp
 	track/media.hpp
+	track/media_select.cpp
+	track/media_select.hpp
 	track/media_player.cpp
 	track/media_player.hpp
 	track/player_media.cpp

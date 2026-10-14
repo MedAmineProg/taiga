@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #include <QLocalSocket>
 #include <QMouseEvent>
+#include <QProcess>
 #include <QTimer>
 #include <QTranslator>
 #include <chrono>
@@ -155,7 +156,9 @@ bool Application::hasPreviousInstance() {
   QDir().mkpath(directory);
   instance_lock_ = std::make_unique<QLockFile>(u"%1/taiga.lock"_s.arg(directory));
   instance_lock_->setStaleLockTime(0);  // only stale if its process is gone
-  return !instance_lock_->tryLock(0);
+  // When restarting, the previous instance is still quitting.
+  const auto timeout = options_.restart ? std::chrono::seconds{15} : std::chrono::seconds{0};
+  return !instance_lock_->tryLock(timeout);
 }
 
 void Application::activatePreviousInstance() {
@@ -200,6 +203,7 @@ void Application::parseCommandLine() {
   parser_.addOptions({
       {"debug", QCoreApplication::translate("main", "Enable debug mode")},
       {"verbose", QCoreApplication::translate("main", "Enable verbose output")},
+      {"restart", QCoreApplication::translate("main", "Wait for the previous instance to quit")},
   });
 
   // This stops the current process in case of an error (e.g. an unknown option was passed).
@@ -211,6 +215,20 @@ void Application::parseCommandLine() {
   options_.debug = parser_.isSet("debug");
 #endif
   options_.verbose = parser_.isSet("verbose");
+  options_.restart = parser_.isSet("restart");
+}
+
+void Application::restart() {
+  QStringList arguments{u"--restart"_s};
+  if (parser_.isSet("debug")) arguments.append(u"--debug"_s);
+  if (options_.verbose) arguments.append(u"--verbose"_s);
+
+  if (!QProcess::startDetached(applicationFilePath(), arguments)) {
+    qWarning() << "Could not restart Taiga.";
+    return;
+  }
+
+  quit();
 }
 
 }  // namespace taiga

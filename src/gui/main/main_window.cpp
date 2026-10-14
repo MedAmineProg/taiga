@@ -20,6 +20,7 @@
 
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QTimer>
 #include <QtWidgets>
 #include <algorithm>
 #include <optional>
@@ -171,6 +172,21 @@ void MainWindow::init() {
   initNowPlaying();
   initUndoNotifications();
   updateTitle();
+
+  // Bring the list up to date when Taiga starts, without blocking the window.
+  QTimer::singleShot(std::chrono::seconds{2}, this, [this] {
+    if (!taiga::settings.syncEnabled()) return;
+    if (!taiga::sync::isUserAuthenticated() && !taiga::sync::willAuthenticate()) return;
+
+    const auto serviceName = taiga::sync::serviceName(taiga::sync::currentServiceId());
+    m_statusBarController->showMessage({
+        .source = StatusBarController::Source::Sync,
+        .text = tr("Synchronizing with %1...").arg(serviceName),
+    });
+    if (!taiga::sync::synchronize()) {
+      m_statusBarController->clearMessage(StatusBarController::Source::Sync);
+    }
+  });
 }
 
 void MainWindow::initActions() {

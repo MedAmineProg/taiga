@@ -20,6 +20,7 @@
 
 #include <QApplication>
 #include <QObject>
+#include <QString>
 #include <QTimer>
 #include <anisthesia.hpp>
 #include <optional>
@@ -27,6 +28,7 @@
 #include <vector>
 
 #include "track/episode.hpp"
+#include "track/media_select.hpp"
 
 namespace track::media {
 
@@ -58,6 +60,8 @@ signals:
   void currentEpisodeChanged(std::optional<Episode> media) const;
 
 private:
+  void logUnselected(const std::vector<WindowMedia>& candidates);
+
   void setPollingEnabled(bool enabled);
   void poll();
   void reset();
@@ -68,6 +72,7 @@ private:
   std::optional<media_t> currentMedia_;
   std::optional<player_t> currentPlayer_;
   void* currentWindowHandle_ = nullptr;
+  QString lastUnselectedLog_;
   std::vector<player_t> players_;
 
   QTimer* pollTimer_;
