@@ -33,6 +33,7 @@
 #include "compat/list.hpp"
 #include "compat/settings.hpp"
 #include "media/anime_utils.hpp"
+#include "sync/service.hpp"
 #include "taiga/accounts.hpp"
 #include "taiga/path.hpp"
 #include "taiga/settings.hpp"
@@ -65,6 +66,12 @@ namespace anime {
 Database::Database() : QObject{} {}
 
 void Database::init() {
+  // Earlier versions kept a single database, whose anime are those of the current service.
+  const auto legacyFileName = u"%1/media.sqlite"_s.arg(taiga::get_data_path());
+  if (!QFile::exists(fileName()) && QFile::exists(legacyFileName)) {
+    QFile::rename(legacyFileName, fileName());
+  }
+
   db_ = QSqlDatabase::addDatabase("QSQLITE");
   db_.setDatabaseName(fileName());
 
@@ -75,6 +82,8 @@ void Database::init() {
     migrateSettingsFromV1();
     return;
   }
+
+  migrateListTable();
 
   readItems();
   readEntries();
@@ -215,7 +224,9 @@ void Database::deleteEntry(const int animeId) {
 }
 
 QString Database::fileName() const {
-  return u"%1/media.sqlite"_s.arg(taiga::get_data_path());
+  // Each service has its own database, as anime IDs differ between services.
+  return u"%1/media-%2.sqlite"_s.arg(taiga::get_data_path())
+      .arg(taiga::sync::serviceSlug(taiga::sync::currentServiceId()));
 }
 
 QString Database::sql(const QString& name) const {
@@ -254,6 +265,33 @@ void Database::createTables() {
   }
 
   db_.commit();
+  db_.close();
+}
+
+void Database::migrateListTable() {
+  if (!db_.open()) return;
+
+  // List entries used to be keyed by their ID on the service. That ID is unknown for new entries,
+  // and MyAnimeList has none at all, so entries overwrote each other. They're keyed by anime now.
+  QSqlQuery q{db_};
+  bool keyedByEntryId = false;
+  if (q.exec("PRAGMA table_info(anime_list)")) {
+    while (q.next()) {
+      if (q.value("name").toString() == u"id" && q.value("pk").toInt() > 0) {
+        keyedByEntryId = true;
+      }
+    }
+  }
+
+  if (keyedByEntryId) {
+    db_.transaction();
+    q.exec("ALTER TABLE anime_list RENAME TO anime_list_old");
+    q.exec(sql("createAnimeList"));
+    q.exec("INSERT OR REPLACE INTO anime_list SELECT * FROM anime_list_old");
+    q.exec("DROP TABLE anime_list_old");
+    db_.commit();
+  }
+
   db_.close();
 }
 

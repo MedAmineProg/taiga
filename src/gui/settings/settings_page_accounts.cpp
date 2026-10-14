@@ -29,11 +29,13 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
 #include <string>
 
 #include "base/string.hpp"
+#include "gui/main/main_window.hpp"
 #include "media/anime_db.hpp"
 #include "sync/anilist/anilist.hpp"
 #include "sync/anilist/anilist_utils.hpp"
@@ -43,6 +45,7 @@
 #include "sync/myanimelist/myanimelist_utils.hpp"
 #include "sync/service.hpp"
 #include "taiga/accounts.hpp"
+#include "taiga/application.hpp"
 #include "taiga/settings.hpp"
 #include "ui_settings_dialog.h"
 
@@ -56,6 +59,21 @@ QString toQString(const std::string& s) {
 
 std::string toStdString(const QLineEdit* lineEdit) {
   return lineEdit->text().trimmed().toStdString();
+}
+
+bool hasToken(const taiga::sync::ServiceId service) {
+  using taiga::sync::ServiceId;
+  switch (service) {
+    case ServiceId::AniList:
+      return !taiga::accounts.anilistToken().empty();
+    case ServiceId::Kitsu:
+      return !taiga::accounts.kitsuAccessToken().empty();
+    case ServiceId::MyAnimeList:
+      return !taiga::accounts.myanimelistAccessToken().empty();
+    case ServiceId::Unknown:
+      break;
+  }
+  return false;
 }
 
 }  // namespace
@@ -155,19 +173,16 @@ void SettingsPageAccounts::updateLoginRows() {
   const auto& accounts = taiga::accounts;
 
   for (auto& row : loginRows_) {
-    bool hasToken = false;
+    const bool loggedIn = hasToken(row.service);
     std::string username;
     switch (row.service) {
       case ServiceId::AniList:
-        hasToken = !accounts.anilistToken().empty();
         username = accounts.anilistUsername();
         break;
       case ServiceId::Kitsu:
-        hasToken = !accounts.kitsuAccessToken().empty();
         username = accounts.kitsuUsername();
         break;
       case ServiceId::MyAnimeList:
-        hasToken = !accounts.myanimelistAccessToken().empty();
         username = accounts.myanimelistUsername();
         break;
       case ServiceId::Unknown:
@@ -177,9 +192,9 @@ void SettingsPageAccounts::updateLoginRows() {
     QString status;
     if (row.pending) {
       status = tr("Logging in...");
-    } else if (hasToken && row.failed) {
+    } else if (loggedIn && row.failed) {
       status = tr("Couldn't log in. Please log in again.");
-    } else if (hasToken) {
+    } else if (loggedIn) {
       status = username.empty() ? tr("Logged in.")
                                 : tr("Logged in as %1.").arg(QString::fromStdString(username));
     } else if (row.failed) {
@@ -189,9 +204,9 @@ void SettingsPageAccounts::updateLoginRows() {
     }
 
     row.statusLabel->setText(status);
-    row.logInButton->setText(hasToken ? tr("Log in again...") : tr("Log in..."));
+    row.logInButton->setText(loggedIn ? tr("Log in again...") : tr("Log in..."));
     row.logInButton->setEnabled(!row.pending);
-    row.logOutButton->setVisible(hasToken && !row.pending);
+    row.logOutButton->setVisible(loggedIn && !row.pending);
   }
 }
 
@@ -202,6 +217,14 @@ void SettingsPageAccounts::logIn(const taiga::sync::ServiceId service) {
   if (!row) return;
 
   const auto name = taiga::sync::serviceName(service);
+
+  // Logging in to a service while the main one isn't logged in makes it the main service.
+  const auto mainService =
+      taiga::sync::serviceIdFromSlug(ui_->serviceComboBox->currentData().toString());
+  if (mainService != service && !hasToken(mainService)) {
+    ui_->serviceComboBox->setCurrentIndex(
+        ui_->serviceComboBox->findData(taiga::sync::serviceSlug(service)));
+  }
 
   switch (service) {
     case ServiceId::AniList: {
@@ -422,7 +445,19 @@ void SettingsPageAccounts::load() {
 }
 
 void SettingsPageAccounts::apply() const {
-  taiga::settings.setService(ui_->serviceComboBox->currentData().toString().toStdString());
+  const auto previousService = taiga::settings.service();
+  const auto service = ui_->serviceComboBox->currentData().toString().toStdString();
+  taiga::settings.setService(service);
+
+  // Each service has its own list, so Taiga restarts to load the other one.
+  if (service != previousService) {
+    const auto text = tr("Taiga will restart to switch to %1.")
+                          .arg(taiga::sync::serviceName(taiga::sync::currentServiceId()));
+    QTimer::singleShot(0, qApp, [text] {
+      QMessageBox::information(taiga::app()->mainWindow(), u"Taiga"_s, text);
+      taiga::app()->restart();
+    });
+  }
   taiga::settings.setSyncEnabled(ui_->syncEnabledCheckBox->isChecked());
 
   const auto mainSlug = ui_->serviceComboBox->currentData().toString();

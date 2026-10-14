@@ -30,7 +30,9 @@ Open **Settings › Accounts**, choose your service, and select **Log in...**:
 - **MyAnimeList:** your browser opens MyAnimeList. Log in and select **Allow**. Then copy the code shown on the page and paste it into Taiga.
 - **Kitsu:** enter your email or username and your password.
 
-Taiga loads your list as soon as you're logged in.
+Taiga loads your list as soon as you're logged in, and brings it up to date every time it starts.
+
+Logging in to a service while your main service isn't logged in makes it your main service. Each service keeps its own list in Taiga. If you switch your main service in **Settings › Accounts**, Taiga restarts to load the other list.
 
 ## Features
 
