@@ -84,8 +84,9 @@ jobs:
             exit 1
           }
           Stop-Process -Id $process.Id -Force
-          if (-not (Test-Path "smoke/$env:PACKAGE/data/media.sqlite")) {
-            Write-Error "Taiga didn't create its data folder."
+          # Each service has its own database, such as media-anilist.sqlite.
+          if (-not (Test-Path "smoke/$env:PACKAGE/data/media-*.sqlite")) {
+            Write-Error "Taiga didn't create its database."
             exit 1
           }
 
