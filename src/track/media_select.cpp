@@ -18,6 +18,7 @@
 
 #include "media_select.hpp"
 
+#include <algorithm>
 #include <numeric>
 
 namespace track::media {
@@ -72,8 +73,10 @@ std::optional<SelectedMedia> selectMedia(const std::vector<WindowMedia>& candida
   std::iota(order.begin(), order.end(), std::size_t{0});
 
   if (currentWindow) {
-    std::ranges::stable_partition(
-        order, [&](const std::size_t i) { return candidates[i].window == currentWindow; });
+    // std::ranges::stable_partition isn't in every standard library yet (e.g. libc++).
+    std::stable_partition(order.begin(), order.end(), [&](const std::size_t i) {
+      return candidates[i].window == currentWindow;
+    });
   }
 
   for (const auto i : order) {
