@@ -107,7 +107,6 @@ void NavigationWidget::refresh() {
 
   addSeparator();
   addItem("Library", "folder", MainWindowPage::Library);
-  addItem("Torrents", "rss_feed", MainWindowPage::Torrents)->setDisabled(true);  // placeholder
 
   setUpdatesEnabled(true);
 }
